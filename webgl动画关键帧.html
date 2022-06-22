@@ -1,0 +1,103 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>three.js-webgl动画关键帧-webgl_animation_keyframes</title>
+  <meta name="description" content="Three.js 是一款运行在浏览器中的 3D 引擎，你可以用它在 web 中创建各种三维场景，包括了摄影机、光影、材质等各种对象。">
+  <meta name="keywords" content="3d,WebGL">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="stopAnimation" style="position: absolute; top: 0px; right: 0px;cursor: pointer;">暂停/播放</div>
+  <!-- 引入three.js -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./build/three.module.js"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from 'three'; // 引入three
+    import Stats from './jsm/libs/stats.module.js'; // 引入统计模块
+
+    import { OrbitControls } from './jsm/controls/OrbitControls.js'; // 相机控件
+    import { RoomEnvironment } from './jsm/environments/RoomEnvironment.js';
+    
+    import { DRACOLoader } from './jsm/loaders/DRACOLoader.js'; // 引入DRACOLoader加载器
+    import { GLTFLoader } from './jsm/loaders/GLTFLoader.js'; // 引入GLTFLoader加载器 JSON|二进制
+
+    let mixer; // 动画混合器
+    const clock = new THREE.Clock(); // 时间对象
+
+    var scene = new THREE.Scene(); // 创建场景
+    scene.background = new THREE.Color(0xe4f5ff); // 设置场景背景色
+
+    const light = new THREE.AmbientLight(0xffffff, .2); // 环境光
+    scene.add(light);
+
+    var renderer = new THREE.WebGLRenderer({ antialias: true}); // 创建渲染器
+    renderer.setSize(window.innerWidth, window.innerHeight); // 设置渲染器尺寸
+    renderer.setPixelRatio(window.devicePixelRatio); // 设置像素大小
+    renderer.outputEncoding = THREE.sRGBEncoding; // 设置颜色模式
+    document.getElementsByTagName('body')[0].appendChild(renderer.domElement);
+
+    const camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 100 ); // 创建透视摄像机
+    const controls = new OrbitControls( camera, renderer.domElement ); // 摄像机控制器
+    camera.position.set( 0, 5, 10 );
+
+    scene.add( camera ); // 添加到场景
+
+    const pmremGenerator = new THREE.PMREMGenerator(renderer); // 辐射环境贴图
+    scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+
+    // 统计模板
+    const stats = new Stats();
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.top = '0px';
+    stats.domElement.style.left = '0px';
+    document.getElementsByTagName('body')[0].appendChild(stats.domElement); // 插入dom
+
+    const dracoLoader = new DRACOLoader(); // 创建加载器
+    dracoLoader.setDecoderPath('js/libs/draco/gltf/'); // 加载压缩文件
+
+    const loader = new GLTFLoader(); // 创建加载器
+    loader.setDRACOLoader(dracoLoader); // 解压压缩文件
+    // 加载加载模型贴图文件
+    loader.load('./models/gltf/LittlestTokyo.glb', (gltf) => {
+      const model = gltf.scene; // 获取模型
+      model.position.set( 1, 0, 0 );
+      model.scale.set(0.01, 0.01, 0.01);// 缩放模型
+      scene.add(model); // 添加模型
+
+      // 绑定动画
+      mixer = new THREE.AnimationMixer(model); // 混合器绑定模型
+      mixer.clipAction(gltf.animations[0]).play();
+      renderer.render( scene, camera );
+      renderer.setAnimationLoop(animation); // 加载完成后渲染动画
+    }, (res) => {
+      console.log('加载进度:', ((res.loaded / res.total) * 100).toFixed(2) + '%');
+    })
+
+    function animation() {
+      controls.update(); // 刷新控制器
+      stats.update(); // 刷新统计
+      const delta = clock.getDelta();
+      mixer.update(delta); // 混合器时间并更新动画
+      renderer.render( scene, camera );
+    }
+    document.getElementById("stopAnimation").onclick = () => {
+      mixer.timeScale =  mixer.timeScale ? 0 : 1;
+    }
+  </script>
+</body>
+</html>

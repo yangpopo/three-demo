@@ -1,0 +1,204 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>three.js-webg动画蒙皮添加混合-webgl_animation_skinning_additive_blending</title>
+  <meta name="description" content="Three.js 是一款运行在浏览器中的 3D 引擎，你可以用它在 web 中创建各种三维场景，包括了摄影机、光影、材质等各种对象。">
+  <meta name="keywords" content="3d,WebGL">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    .animation-menu {
+      position: absolute;
+      top: 0;
+      right: 0;
+      padding: 0;
+      margin: 0;
+      z-index: 9;
+    }
+    .animation-menu li {
+      background-color: #fff;
+      box-sizing: border-box;
+      padding: 5px 30px;
+      list-style: none;
+      font-size: 14px;
+      margin: 5px 0;
+      text-align: center;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <ul class="animation-menu">
+    <li>动画-同意</li>
+    <li>动画-摇头</li>
+    <li>动画-空闲</li>
+    <li>动画-跑</li>
+    <li style="display: none;">动画-悲伤的姿势</li>
+    <li style="display: none;">动画-潜行姿势</li>
+    <li>动画-行走</li>
+    <li>悲伤的姿势<input id="sadPose" type="range" max="100" min="0"></li>
+    <li>潜行姿势<input id="sneakPose" type="range" max="100" min="0"></li>
+    <li>动画速度<input id="speed" type="range" max="100" min="0"></li>
+  </ul>
+  <!-- 引入three -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "../build/three.module.js"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    
+    import Stats from './jsm/libs/stats.module.js'; // 引入数据统计
+    import { TrackballControls } from './jsm/controls/TrackballControls.js'; // 相机控件
+
+    import { GLTFLoader } from './jsm/loaders/GLTFLoader.js'; // 引入加载器
+
+    let mixer; // 动画混合器
+    let animationArray = []; // 动画数组
+    const clock = new THREE.Clock(); // 创建时间对象
+    const stats = new Stats(); // 创建统计对象
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.top = 0;
+    stats.domElement.style.left = 0;
+    document.getElementsByTagName('body')[0].appendChild(stats.domElement); // 插入
+
+    const scene = new THREE.Scene(); // 创建场景
+    scene.fog = new THREE.Fog(new THREE.Color(0xf0f0f0), 10, 50); // 创建雾
+    scene.background = new THREE.Color(0xf0f0f0);
+
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, .6 ); // 创建半球光
+    hemiLight.position.set( 0, 20, 0 );
+    scene.add(hemiLight);
+
+    const spotLight = new THREE.SpotLight(0xffffff, 1, 1000, Math.PI/10, 0.1, 0.1); // 创建聚光灯
+    spotLight.position.set(0, 100, 100);
+    spotLight.castShadow = true; // 开启投影
+    spotLight.shadow.mapSize.width = 2048;
+    spotLight.shadow.mapSize.height = 2048;
+    spotLight.shadow.focus = 0.25; // 集中
+    spotLight.shadow.camera.near = 1; // 近的
+    spotLight.shadow.camera.far = 1000; // 远
+    spotLight.shadow.camera.fov = 100; // 视野
+    scene.add(spotLight);
+
+    const camera = new THREE.PerspectiveCamera(25, window.innerWidth / window.innerHeight, 1, 100); // 透视摄像机
+    camera.position.set(-4, 1.5, 5);
+    scene.add(camera);
+
+    // 创建地面
+    const geometry = new THREE.PlaneGeometry(100, 100); // 地面集合
+    const material = new THREE.MeshPhongMaterial(); // 镜面材质
+    material.color = new THREE.Color(0xf0f0f0);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.rotateX(-Math.PI/2); // 旋转模型
+    mesh.receiveShadow = true; // 产生阴影
+    scene.add(mesh);
+
+    const renderer = new THREE.WebGLRenderer({antialias: true}); // 创建渲染器
+    renderer.shadowMap.enabled = true; // 开启阴影
+    renderer.setSize(window.innerWidth, window.innerHeight); // 设置渲染器大小
+    renderer.setPixelRatio(window.devicePixelRatio); // 设置像素比
+    renderer.outputEncoding = THREE.sRGBEncoding; // 设置颜色模式
+    document.getElementsByTagName('body')[0].appendChild(renderer.domElement); // 将渲染器添加到dom
+
+    const controls = new TrackballControls(camera, renderer.domElement); // 创建相机控制器
+    controls.target = new THREE.Vector3(0, 1, 0);
+
+    const loader = new GLTFLoader(); // 创建加载器
+    loader.load('models/gltf/Xbot.glb', (gltf) => {
+      console.log(gltf);
+      const model = gltf.scene; // 模型
+      // 模型设置阴影
+      model.traverse((object) => {
+        if (object.isMesh) {
+          object.castShadow = true;
+        }
+      })
+
+      // 绑定动画
+      mixer = new THREE.AnimationMixer(model); // 创建混合器绑定模型
+      gltf.animations.forEach((item) => {
+        animationArray.push(mixer.clipAction(item));
+      });
+
+      scene.add(model);
+      animation(); // 加载完后执行
+    }, (res) => {
+      console.log('加载完成:', ((res.loaded / res.total) * 100).toFixed(2));
+    })
+
+    function animation() {
+      stats.update(); // 更新统计器
+      controls.update(); // 更新控制器
+      const delta = clock.getDelta();
+      mixer.update(delta); // 刷新动画
+      renderer.render(scene, camera);
+      requestAnimationFrame(animation);
+    }
+
+    document.getElementsByTagName('li')[0].onclick = () => {
+      animationArray.forEach(animation => {
+        animation.stop();
+      });
+      animationArray[0].play();
+    }
+    document.getElementsByTagName('li')[1].onclick = () => {
+      animationArray.forEach(animation => {
+        animation.stop();
+      });
+      animationArray[1].play();
+    }
+    document.getElementsByTagName('li')[2].onclick = () => {
+      animationArray.forEach(animation => {
+        animation.stop();
+      });
+      animationArray[2].play();
+    }
+    document.getElementsByTagName('li')[3].onclick = () => {
+      animationArray.forEach(animation => {
+        animation.stop();
+      });
+      animationArray[3].play();
+    }
+    document.getElementsByTagName('li')[4].onclick = () => {
+      animationArray.forEach(animation => {
+        animation.stop();
+      });
+      animationArray[4].play();
+    }
+    document.getElementsByTagName('li')[5].onclick = () => {
+      animationArray.forEach(animation => {
+        animation.stop();
+      });
+      animationArray[5].play();
+    }
+    document.getElementsByTagName('li')[6].onclick = () => {
+      animationArray.forEach(animation => {
+        animation.stop();
+      });
+      animationArray[6].play();
+    }
+
+    // 悲伤的姿势
+    document.getElementById('sadPose').onchange = function(e) {
+      console.log(this.value / 50, "---")
+    }
+
+    // 动画速度
+    document.getElementById('speed').onchange = function(e) {
+      mixer.timeScale = this.value / 50
+    }
+  </script>
+  
+</body>
+</html>

@@ -1,0 +1,250 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>three.js-webgl动画蒙皮混合-webgl_animation_skinning_blending</title>
+  <meta name="description" content="Three.js 是一款运行在浏览器中的 3D 引擎，你可以用它在 web 中创建各种三维场景，包括了摄影机、光影、材质等各种对象。">
+  <meta name="keywords" content="3d,WebGL">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    .animation-menu {
+      position: absolute;
+      top: 0;
+      right: 0;
+      padding: 0;
+      margin: 0;
+    }
+    .animation-menu li {
+      background-color: #fff;
+      box-sizing: border-box;
+      padding: 5px 30px;
+      list-style: none;
+      font-size: 14px;
+      margin: 5px 0;
+      text-align: center;
+      cursor: pointer;
+      z-index: 9;
+    }
+    
+  </style>
+</head>
+
+<body>
+  <ul class="animation-menu">
+    <li>动画-等待</li>
+    <li>动画-跑</li>
+    <li>动画-模型站立</li>
+    <li>动画-行走</li>
+    <li>动画速度<input id="speed" type="range" max="100" min="0"></li>
+    <li>等待->行走</li>
+  </ul>
+  <!-- 引入three.js -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./build/three.module.js"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from 'three'; // 引入主包
+    import Stats from './jsm/libs/stats.module.js'; // 引入性能监控
+
+    import { TrackballControls } from './jsm/controls/TrackballControls.js'; // 相机控件
+
+    import { GLTFLoader } from './jsm/loaders/GLTFLoader.js'; // 引入加载器
+
+    let mixer; // 动画混合器
+    let animationArray = []; // 动画数组
+    const clock = new THREE.Clock(); // 时间对象
+    const stats = new Stats(); //创建监控对象
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.top = '0px';
+    stats.domElement.style.left = '0px';
+    document.getElementsByTagName('body')[0].appendChild(stats.domElement);
+
+    const scene = new THREE.Scene(); // 创建场景
+    scene.background = new THREE.Color(0xa0a0a0); // 配置场景背景色
+    scene.fog = new THREE.Fog( 0xa0a0a0, 1, 50 ); // 场景参数雾
+
+    const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 1, 1000); // 创建摄像机
+    camera.position.set(5, 2, 8);
+    scene.add(camera);
+
+    // 创建半球光线
+    const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444, .5);
+    hemiLight.position.set( 0, 10, 0 );
+    scene.add(hemiLight); 
+
+    // 创建一个虚拟的球形网格 Mesh 的辅助对象来模拟 半球形光源 HemisphereLight.
+    const hemiLighthelper = new THREE.HemisphereLightHelper(hemiLight, 5);
+    scene.add(hemiLighthelper);
+
+
+    // 创建点聚光灯
+    const spotLight = new THREE.SpotLight(0xffffff, 1, 100, Math.PI/2, 0.1, 0.1);
+    spotLight.shadowCameraVisible = true; // 显示灯光的位置
+    spotLight.position.set(15, 10, 10);
+    spotLight.castShadow = true;
+    spotLight.shadow.camera.visible = true;
+    spotLight.shadow.mapSize.width = 2048;
+    spotLight.shadow.mapSize.height = 2048;
+    spotLight.shadow.focus = 0.25; // 集中
+    spotLight.shadow.camera.near = 10; // 近的
+    spotLight.shadow.camera.far = 10; // 远
+    spotLight.shadow.camera.fov = 1; // 视野
+    scene.add(spotLight);
+
+    // 用于模拟场景中平行光 DirectionalLight 的辅助对象. 其中包含了表示光位置的平面和表示光方向的线段.
+    const directionalLightHelper = new THREE.DirectionalLightHelper(spotLight, 1);
+    scene.add(directionalLightHelper);
+
+
+    // 辅助坐标
+    const axesHelper = new THREE.AxesHelper( 5 );
+    scene.add( axesHelper );
+
+    // 创建地面
+    const groundGeometry = new THREE.PlaneGeometry(100, 100);
+    const groundMaterial = new THREE.MeshPhongMaterial( {color: 0x999999, depthWrite: false} );
+    const groundPlane = new THREE.Mesh(groundGeometry, groundMaterial);
+    groundPlane.rotation.x = - Math.PI / 2;
+    groundPlane.receiveShadow = true; // 产生阴影
+    scene.add(groundPlane);
+
+    // 创建加载器--加载模型文件
+    const loader = new GLTFLoader();
+    loader.load('models/gltf/Soldier.glb', (gltf) => {
+        const model = gltf.scene; // 获取模型
+        model.scale.set(1.5, 1.5, 1.5); // 缩放模型
+        model.rotation.y = - Math.PI / 3 * 2;
+        scene.add(model);
+        // 模型开启阴影
+        model.traverse(function (object) {
+          if ( object.isMesh ) object.castShadow = true, object.receiveShadow = true;;
+        });
+
+        let skeleton = new THREE.SkeletonHelper( model );
+        skeleton.visible = false;
+        scene.add(skeleton);
+
+        // 绑定动画
+        mixer = new THREE.AnimationMixer(model); // 混合器绑定模型
+        animationArray.push(mixer.clipAction(gltf.animations[0]));
+        animationArray.push(mixer.clipAction(gltf.animations[1]));
+        animationArray.push(mixer.clipAction(gltf.animations[2]));
+        animationArray.push(mixer.clipAction(gltf.animations[3]));
+
+        animation(); // 更新动画
+      }, 
+      (res) => {
+        console.log('加载进度:', ((res.loaded / res.total) * 100).toFixed(2) + '%')
+      }
+    );
+    
+
+    // 创建渲染器
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio); // 设置像素大小
+    renderer.outputEncoding = THREE.sRGBEncoding; // 设置颜色模式
+    renderer.shadowMap.enabled = true; // 开启阴影贴图
+    document.getElementsByTagName('body')[0].appendChild(renderer.domElement);
+
+    // 相机控制器
+    const controls = new TrackballControls(camera, renderer.domElement);
+    controls.target = new THREE.Vector3(0, 1, 0);
+
+    function animation() {
+      stats.update(); // 刷新统计
+      controls.update(); // 刷新控制器
+      const delta = clock.getDelta();
+      mixer.update(delta); // 刷新动画
+      renderer.render(scene, camera);
+      requestAnimationFrame(animation);
+    }
+    // 等待
+    document.getElementsByTagName('li')[0].onclick = () => {
+      animationArray.forEach(animation => {
+        animation.stop();
+      });
+      animationArray[0].play();
+    }
+    // 跑
+    document.getElementsByTagName('li')[1].onclick = () => {
+      animationArray.forEach(animation => {
+        animation.stop();
+      });
+      animationArray[1].play();
+    }
+    // 模型站立
+    document.getElementsByTagName('li')[2].onclick = () => {
+      animationArray.forEach(animation => {
+        animation.stop();
+      });
+      animationArray[2].play();
+    }
+    // 行走
+    document.getElementsByTagName('li')[3].onclick = () => {
+      animationArray.forEach(animation => {
+        animation.stop();
+      });
+      animationArray[3].play();
+    }
+    // 动画速度
+    document.getElementById('speed').onchange = function(e) {
+      mixer.timeScale = this.value / 50
+    }
+    // 等待 => 行走
+    document.getElementsByTagName('li')[5].onclick = () => {
+      prepareCrossFade(animationArray[0], animationArray[3], 2.5);
+    }
+
+    // 准备动画淡入淡出 startAction:开始动画 endAction:结束动画 defaultDuration:过渡时长--单位:秒
+    function prepareCrossFade(startAction, endAction, defaultDuration) {
+      // 取消暂停现在的所有动画
+      let actions = [ animationArray[0], animationArray[1], animationArray[3] ];
+      actions.forEach(function(action) {
+        action.paused = false;
+      });
+      if (startAction == animationArray[0]) {
+        console.log("是等待动画的跳转动画---");
+        // 判断开始动画是不是等于等待动画
+        executeCrossFade(startAction, endAction, defaultDuration);
+      } else {
+
+      }
+
+    }
+
+    // 执行交叉淡入淡出 -- 由禁止状态下到运动
+    function executeCrossFade( startAction, endAction, duration ) {
+
+      // Not only the start action, but also the end action must get a weight of 1 before fading
+      // (concerning the start action this is already guaranteed in this place)
+
+      // setWeight( endAction, 1 );
+      // endAction.time = 0;
+
+      // Crossfade with warping - you can also try without warping by setting the third parameter to false
+
+      startAction.crossFadeTo( endAction, duration, true );
+
+    }
+// 设置权重
+    function setWeight( action, weight ) {
+      action.enabled = true;
+      action.setEffectiveTimeScale( 1 );
+      action.setEffectiveWeight( weight );
+    }
+  </script>
+</body>
+</html>
