@@ -51,8 +51,9 @@
     renderer.outputEncoding = THREE.sRGBEncoding; // 设置颜色模式
     document.getElementsByTagName('body')[0].appendChild(renderer.domElement);
 
-    const camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 100 ); // 创建透视摄像机
+    const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 100 ); // 创建透视摄像机
     const controls = new OrbitControls( camera, renderer.domElement ); // 摄像机控制器
+    controls.target = new THREE.Vector3(0,2,0); // 设置相机控制器看哪里
     camera.position.set( 0, 5, 10 );
 
     scene.add( camera ); // 添加到场景
@@ -75,7 +76,7 @@
     // 加载加载模型贴图文件
     loader.load('./models/gltf/LittlestTokyo.glb', (gltf) => {
       const model = gltf.scene; // 获取模型
-      model.position.set( 1, 0, 0 );
+      model.position.set( 1, 2, 0 );
       model.scale.set(0.01, 0.01, 0.01);// 缩放模型
       scene.add(model); // 添加模型
 
@@ -88,11 +89,70 @@
       console.log('加载进度:', ((res.loaded / res.total) * 100).toFixed(2) + '%');
     })
 
+    // 创建坐标辅助对象
+    const axesHelper = new THREE.AxesHelper(6);
+    scene.add( axesHelper );
+
+    // 关键运动轨迹
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3( 6, 0, 0 ),
+      new THREE.Vector3( 0, 0, 6 ),
+      new THREE.Vector3( -6, 0, 0 ),
+      new THREE.Vector3( 0, 0, -6 ),
+      new THREE.Vector3( 0, 6, 0 )
+    ]); // 创建平滑的曲线
+    curve.closed = true; // 曲线闭合
+    curve.curveType = 'centripetal'; // 曲线类型 centripetal、chordal和catmullrom
+    curve.tension = 1; // 曲线张力
+    const points = curve.getPoints(100); // 获取曲线的积分
+    const curveGeometry = new THREE.BufferGeometry().setFromPoints(points);
+
+    // 创建轨迹材质
+    const curveMaterial = new THREE.LineBasicMaterial( {
+      color: 0xffffff,
+      linewidth: 1,
+      linecap: 'round',
+      linejoin:  'round',
+    } );
+    // 创建轨迹物体
+    const curveLine = new THREE.Line(curveGeometry, curveMaterial);
+    // curveLine.visible = false;
+    scene.add(curveLine);
+
+    // 创建运动物体
+    const motionGeometry = new THREE.ConeGeometry( 0.25, 0.5, 20, 1 );
+    const motionMaterial = new THREE.MeshLambertMaterial( {color: 0x049ef4} );
+    const motionCone = new THREE.Mesh( motionGeometry, motionMaterial);
+    console.log(motionCone.up, "++模型的朝向");
+    motionCone.rotation.z = - Math.PI / 2;
+    // 设置模型的朝向
+    motionCone.up = new THREE.Vector3(1, 0, 0);
+    console.log(motionCone.up, "--模型的朝向");
+    scene.add(motionCone);
+
+    // 在曲线上运动
+    let animationSpeed = 0.001; // 动画速度
+    let animationCompletion = 0; // 动画完成率
+    function moveOnCurve() {
+      if (animationCompletion >= 1) {
+        animationCompletion = 0; 
+      }
+      // 获取曲线上给定位置的点的坐标
+      const point = curve.getPointAt(animationCompletion); 
+      motionCone.position.set(point.x, point.y, point.z);
+      animationCompletion = animationCompletion + animationSpeed;
+
+      // 修改朝向
+      var mtx = new THREE.Matrix4()  //创建一个4维矩阵
+      mtx.lookAt(motionCone.position, point, motionCone.up);
+    }
+
     function animation() {
       controls.update(); // 刷新控制器
       stats.update(); // 刷新统计
       const delta = clock.getDelta();
       mixer.update(delta); // 混合器时间并更新动画
+      moveOnCurve(); // 按照曲线运动动画
       renderer.render( scene, camera );
     }
     document.getElementById("stopAnimation").onclick = () => {
