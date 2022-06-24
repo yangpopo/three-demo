@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>three.js-webgl动画蒙皮混合-webgl_animation_skinning_blending</title>
+  <title>three.js-webgl动画蒙皮变形-webgl_animation_skinning_morph</title>
   <meta name="description" content="Three.js 是一款运行在浏览器中的 3D 引擎，你可以用它在 web 中创建各种三维场景，包括了摄影机、光影、材质等各种对象。">
   <meta name="keywords" content="3d,WebGL">
   <style>
@@ -16,9 +16,14 @@
     .animation-menu {
       position: absolute;
       top: 0;
-      right: 0;
       padding: 0;
       margin: 0;
+    }
+    .animation-menu.left {
+      left: 0;
+    }
+    .animation-menu.right {
+      right: 0;
     }
     .animation-menu li {
       background-color: #fff;
@@ -31,16 +36,26 @@
       cursor: pointer;
       z-index: 9;
     }
+    .animation-menu .title {
+      width: 100%;
+      font-size: 14px;
+      text-align: center;
+      padding: 10px;
+    }
     
   </style>
 </head>
 
 <body>
-  <ul class="animation-menu">
-    <li>动画-等待</li>
-    <li>动画-跑</li>
-    <li>动画-模型站立</li>
-    <li>动画-行走</li>
+  <ul class="animation-menu left">
+    <div class="title">持续动画</div>
+    <li id="Idle">闲着-Idle</li>
+    <li id="Walking">走路-Walking</li>
+    <li id="Running">跑步-Running</li>
+    <li id="Dance">跳舞-Dance</li>
+    <li id="Death">死亡-Death</li>
+    <li id="Sitting">坐着-Sitting</li>
+    <li id="Standing">站着-Standing</li>
     <li>动画速度<input id="speed" type="range" max="100" min="0"></li>
   </ul>
   <!-- 引入three.js -->
@@ -60,7 +75,9 @@
     import { GLTFLoader } from './jsm/loaders/GLTFLoader.js'; // 引入加载器
 
     let mixer; // 动画混合器
-    let animationArray = []; // 动画数组
+    let activeAction = Object; // 当前激活的动画
+    let continuedAnimation = {}; // 持续动画
+    let emoticonAnimation = {}; // 表情动画
     const clock = new THREE.Clock(); // 时间对象
     const stats = new Stats(); //创建监控对象
     stats.domElement.style.position = 'absolute';
@@ -119,27 +136,33 @@
 
     // 创建加载器--加载模型文件
     const loader = new GLTFLoader();
-    loader.load('models/gltf/Soldier.glb', (gltf) => {
+    loader.load('models/gltf/RobotExpressive/RobotExpressive.glb', (gltf) => {
         const model = gltf.scene; // 获取模型
-        model.scale.set(1.5, 1.5, 1.5); // 缩放模型
-        model.rotation.y = - Math.PI / 3 * 2;
+        model.scale.set(0.6, 0.6, 0.6); // 缩放模型
+        model.rotation.y = Math.PI / 3;
         scene.add(model);
         // 模型开启阴影
         model.traverse(function (object) {
           if ( object.isMesh ) object.castShadow = true, object.receiveShadow = true;;
         });
 
-        let skeleton = new THREE.SkeletonHelper( model );
-        skeleton.visible = false;
-        scene.add(skeleton);
-
         // 绑定动画
         mixer = new THREE.AnimationMixer(model); // 混合器绑定模型
-        animationArray.push(mixer.clipAction(gltf.animations[0]));
-        animationArray.push(mixer.clipAction(gltf.animations[1]));
-        animationArray.push(mixer.clipAction(gltf.animations[2]));
-        animationArray.push(mixer.clipAction(gltf.animations[3]));
+        // 把动画数组拆分成持续动画和表情动画
+        const continued = [ 'Idle', 'Walking', 'Running', 'Dance', 'Death', 'Sitting', 'Standing' ];
+				const emoticon = [ 'Jump', 'Yes', 'No', 'Wave', 'Punch', 'ThumbsUp' ];
+        for (let i = 0; i < gltf.animations.length; i++) {
+          if (continued.indexOf(gltf.animations[i].name) >= 0) {
+            continuedAnimation[gltf.animations[i].name] = mixer.clipAction(gltf.animations[i]);
+          }
+          if (emoticon.indexOf(gltf.animations[i].name) >= 0) {
+            emoticonAnimation[gltf.animations[i].name] = mixer.clipAction(gltf.animations[i]);
+          }
+        }
 
+        // 初始动画
+        continuedAnimation.Idle.play();
+        activeAction = continuedAnimation.Idle; // 设置当前激活动画
         animation(); // 更新动画
       }, 
       (res) => {
@@ -170,38 +193,51 @@
       renderer.render(scene, camera);
       requestAnimationFrame(animation);
     }
-    // 等待
-    document.getElementsByTagName('li')[0].onclick = () => {
-      animationArray.forEach(animation => {
-        animation.stop();
-      });
-      animationArray[0].play();
+
+    // 淡入动画
+    function fadeToAction(previousAction, duration) {
+      if (activeAction !== previousAction) {
+        // 激活的动画和下一个动画不是同一个
+        activeAction.fadeOut(duration); // 淡出当前激活动画
+      }
+      previousAction
+      .reset() // 重置动作
+      .setEffectiveTimeScale(1) // 设置时间比例 以及停用所有的变形
+      .setEffectiveWeight(1)  // 设置权重（weight）以及停止所有淡入淡出
+      .fadeIn( duration ) // 动画淡入 持续时间 duration
+      .play(); // 播放动画
     }
-    // 跑
-    document.getElementsByTagName('li')[1].onclick = () => {
-      animationArray.forEach(animation => {
-        animation.stop();
-      });
-      animationArray[1].play();
+
+    // 持续动画
+    document.getElementById('Idle').onclick = () => {
+      fadeToAction(continuedAnimation.Idle, 1.5); // 淡入动画
+      activeAction = continuedAnimation.Idle;
     }
-    // 模型站立
-    document.getElementsByTagName('li')[2].onclick = () => {
-      animationArray.forEach(animation => {
-        animation.stop();
-      });
-      animationArray[2].play();
+    document.getElementById('Walking').onclick = () => {
+      fadeToAction(continuedAnimation.Walking, 1.5); // 淡入动画
+      activeAction = continuedAnimation.Walking;
     }
-    // 行走
-    document.getElementsByTagName('li')[3].onclick = () => {
-      animationArray.forEach(animation => {
-        animation.stop();
-      });
-      animationArray[3].play();
+    document.getElementById('Running').onclick = () => {
+      fadeToAction(continuedAnimation.Running, 1.5); // 淡入动画
+      activeAction = continuedAnimation.Running;
     }
-    // 动画速度
-    document.getElementById('speed').onchange = function(e) {
-      mixer.timeScale = this.value / 50
+    document.getElementById('Dance').onclick = () => {
+      fadeToAction(continuedAnimation.Dance, 1.5); // 淡入动画
+      activeAction = continuedAnimation.Dance;
     }
+    document.getElementById('Death').onclick = () => {
+      fadeToAction(continuedAnimation.Death, 1.5); // 淡入动画
+      activeAction = continuedAnimation.Death;
+    }
+    document.getElementById('Sitting').onclick = () => {
+      fadeToAction(continuedAnimation.Sitting, 1.5); // 淡入动画
+      activeAction = continuedAnimation.Sitting;
+    }
+    document.getElementById('Standing').onclick = () => {
+      fadeToAction(continuedAnimation.Standing, 1.5); // 淡入动画
+      activeAction = continuedAnimation.Standing;
+    }
+    
   </script>
 </body>
 </html>
