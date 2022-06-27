@@ -186,8 +186,6 @@
         // 控制表情
         face = model.getObjectByName('Head_4'); // 获取要控制的子模型
         const expressions = Object.keys(face.morphTargetDictionary); //face.morphTargetDictionary 变形目标词典  默认情况下是未定义
-        console.log(face.morphTargetInfluences);
-
 
         // 初始动画
         continuedAnimation.Idle.play();
@@ -226,7 +224,6 @@
     // 淡入动画
     function fadeToAction(previousAction, duration) {
       if (activeAction !== previousAction) {
-        console.log("淡出激活的动画")
         // 激活的动画和下一个动画不是同一个
         activeAction.fadeOut(duration); // 淡出当前激活动画
       }
@@ -270,7 +267,6 @@
     // 回复原状
     function restoreState() {
       // 移除动画完成的监听事件
-      console.log("完成后执行")
       mixer.removeEventListener('finished', restoreState);
       fadeToAction(onceContinue, .2); // 淡入动画
       activeAction = onceContinue;
