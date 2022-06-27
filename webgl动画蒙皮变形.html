@@ -56,7 +56,18 @@
     <li id="Death">死亡-Death</li>
     <li id="Sitting">坐着-Sitting</li>
     <li id="Standing">站着-Standing</li>
-    <li>动画速度<input id="speed" type="range" max="100" min="0"></li>
+    <li>愤怒-Angry<input id="Angry" type="range" max="100" min="0" value="0"></li>
+    <li>惊讶-Surprised<input id="Surprised" type="range" max="100" min="0" value="0"></li>
+    <li>悲伤-Sad<input id="Sad" type="range" max="100" min="0" value="0"></li>
+  </ul>
+  <ul class="animation-menu right">
+    <div class="title">表情动画</div>
+    <li id="Jump">跳跃-Jump</li>
+    <li id="Yes">是-Yes</li>
+    <li id="No">否-No</li>
+    <li id="Wave">挥手-Wave</li>
+    <li id="Punch">冲压-Punch</li>
+    <li id="ThumbsUp">拇指支撑-ThumbsUp</li>
   </ul>
   <!-- 引入three.js -->
   <script type="importmap">
@@ -76,8 +87,10 @@
 
     let mixer; // 动画混合器
     let activeAction = Object; // 当前激活的动画
+    let onceContinue = Object; // 曾经激活的动画
     let continuedAnimation = {}; // 持续动画
     let emoticonAnimation = {}; // 表情动画
+    let face = Object; // 控制表情的子模型
     const clock = new THREE.Clock(); // 时间对象
     const stats = new Stats(); //创建监控对象
     stats.domElement.style.position = 'absolute';
@@ -152,13 +165,29 @@
         const continued = [ 'Idle', 'Walking', 'Running', 'Dance', 'Death', 'Sitting', 'Standing' ];
 				const emoticon = [ 'Jump', 'Yes', 'No', 'Wave', 'Punch', 'ThumbsUp' ];
         for (let i = 0; i < gltf.animations.length; i++) {
+          // 类型动画
           if (continued.indexOf(gltf.animations[i].name) >= 0) {
-            continuedAnimation[gltf.animations[i].name] = mixer.clipAction(gltf.animations[i]);
+            let action = mixer.clipAction(gltf.animations[i]);
+            if (gltf.animations[i].name == 'Standing' || gltf.animations[i].name ==  'Sitting' || gltf.animations[i].name == 'Death') {
+              action.clampWhenFinished = true; // 是否在最后一针停止
+              action.loop = THREE.LoopOnce; // 循环属性--只循环一次
+            }
+            continuedAnimation[gltf.animations[i].name] = action;
           }
+          // 表情动画
           if (emoticon.indexOf(gltf.animations[i].name) >= 0) {
-            emoticonAnimation[gltf.animations[i].name] = mixer.clipAction(gltf.animations[i]);
+            let action = mixer.clipAction(gltf.animations[i]);
+            action.clampWhenFinished = true; // 是否在最后一针停止
+            action.loop = THREE.LoopOnce; // 循环属性--只循环一次
+            emoticonAnimation[gltf.animations[i].name] = action;
           }
         }
+
+        // 控制表情
+        face = model.getObjectByName('Head_4'); // 获取要控制的子模型
+        const expressions = Object.keys(face.morphTargetDictionary); //face.morphTargetDictionary 变形目标词典  默认情况下是未定义
+        console.log(face.morphTargetInfluences);
+
 
         // 初始动画
         continuedAnimation.Idle.play();
@@ -197,6 +226,7 @@
     // 淡入动画
     function fadeToAction(previousAction, duration) {
       if (activeAction !== previousAction) {
+        console.log("淡出激活的动画")
         // 激活的动画和下一个动画不是同一个
         activeAction.fadeOut(duration); // 淡出当前激活动画
       }
@@ -204,7 +234,7 @@
       .reset() // 重置动作
       .setEffectiveTimeScale(1) // 设置时间比例 以及停用所有的变形
       .setEffectiveWeight(1)  // 设置权重（weight）以及停止所有淡入淡出
-      .fadeIn( duration ) // 动画淡入 持续时间 duration
+      .fadeIn(duration) // 动画淡入 持续时间 duration
       .play(); // 播放动画
     }
 
@@ -236,6 +266,97 @@
     document.getElementById('Standing').onclick = () => {
       fadeToAction(continuedAnimation.Standing, 1.5); // 淡入动画
       activeAction = continuedAnimation.Standing;
+    }
+    // 回复原状
+    function restoreState() {
+      // 移除动画完成的监听事件
+      console.log("完成后执行")
+      mixer.removeEventListener('finished', restoreState);
+      fadeToAction(onceContinue, .2); // 淡入动画
+      activeAction = onceContinue;
+    }
+    
+    // 表情动画
+    document.getElementById('Jump').onclick = () => {
+      // 动画防抖
+      if (emoticonAnimation.Jump.isRunning()) {
+        return
+      }
+      fadeToAction(emoticonAnimation.Jump, .2); // 淡入动画
+      onceContinue = activeAction; // 把激活动画设置成曾经激活动画
+      activeAction = emoticonAnimation.Jump; // 修改当前激活动画
+      // 监听混合动画是否完成如果完成就触发回复动画
+      mixer.addEventListener('finished', restoreState);
+    }
+    document.getElementById('Yes').onclick = () => {
+      // 动画防抖
+      if (emoticonAnimation.Yes.isRunning()) {
+        return
+      }
+      fadeToAction(emoticonAnimation.Yes, .2); // 淡入动画
+      onceContinue = activeAction; // 把激活动画设置成曾经激活动画
+      activeAction = emoticonAnimation.Yes; // 修改当前激活动画
+      // 监听混合动画是否完成如果完成就触发回复动画
+      mixer.addEventListener('finished', restoreState);
+    }
+    document.getElementById('No').onclick = () => {
+      // 动画防抖
+      if (emoticonAnimation.No.isRunning()) {
+        return
+      }
+      fadeToAction(emoticonAnimation.No, .2); // 淡入动画
+      onceContinue = activeAction; // 把激活动画设置成曾经激活动画
+      activeAction = emoticonAnimation.No; // 修改当前激活动画
+      // 监听混合动画是否完成如果完成就触发回复动画
+      mixer.addEventListener('finished', restoreState);
+    }
+    document.getElementById('Wave').onclick = () => {
+      // 动画防抖
+      if (emoticonAnimation.Wave.isRunning()) {
+        return
+      }
+      fadeToAction(emoticonAnimation.Wave, .2); // 淡入动画
+      onceContinue = activeAction; // 把激活动画设置成曾经激活动画
+      activeAction = emoticonAnimation.Wave; // 修改当前激活动画
+      // 监听混合动画是否完成如果完成就触发回复动画
+      mixer.addEventListener('finished', restoreState);
+    }
+    document.getElementById('Punch').onclick = () => {
+      // 动画防抖
+      if (emoticonAnimation.Punch.isRunning()) {
+        return
+      }
+      fadeToAction(emoticonAnimation.Punch, .2); // 淡入动画
+      onceContinue = activeAction; // 把激活动画设置成曾经激活动画
+      activeAction = emoticonAnimation.Punch; // 修改当前激活动画
+      // 监听混合动画是否完成如果完成就触发回复动画
+      mixer.addEventListener('finished', restoreState);
+    }
+    document.getElementById('ThumbsUp').onclick = () => {
+      // 动画防抖
+      if (emoticonAnimation.ThumbsUp.isRunning()) {
+        return
+      }
+      fadeToAction(emoticonAnimation.ThumbsUp, .2); // 淡入动画
+      onceContinue = activeAction; // 把激活动画设置成曾经激活动画
+      activeAction = emoticonAnimation.ThumbsUp; // 修改当前激活动画
+      // 监听混合动画是否完成如果完成就触发回复动画
+      mixer.addEventListener('finished', restoreState);
+    }
+
+    // 百分比换算
+    function unitConversion(val) {
+      return val / 100
+    }
+    // 控制表情
+    document.getElementById("Angry").onchange = function() {
+      face.morphTargetInfluences[0] = unitConversion(this.value);
+    }
+    document.getElementById("Surprised").onchange = function() {
+      face.morphTargetInfluences[1] = unitConversion(this.value);
+    }
+    document.getElementById("Sad").onchange = function() {
+      face.morphTargetInfluences[2] = unitConversion(this.value);
     }
     
   </script>
