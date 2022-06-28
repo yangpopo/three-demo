@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -41,6 +40,9 @@
     <li id="Run">动画-跑-Run</li>
     <li id="TPose">动画-T姿态-TPose</li>
     <li id="Walk">动画-步行-Walk</li>
+    <li>等待-Idle-权重<input id="IdleWeight" type="range" max="100" min="0" value="100"></li>
+    <li>跑-Run-权重<input id="RunWeight" type="range" max="100" min="0" value="0"></li>
+    <li>步行-Walk-权重<input id="WalkWeight" type="range" max="100" min="0" value="0"></li>
     <li>动画速度<input id="speed" type="range" max="100" min="0"></li>
   </ul>
   <!-- 引入three.js -->
@@ -142,13 +144,18 @@
         
         // 激活所有动画
         for (let key in animationJSON) {
-          if(key == 'Idle' || key == 'Run' || key == 'Walk'){
-            // 设置权重
+          // 设置权重
+          if(key == 'Idle') {
             animationJSON[key].enabled = true;
             animationJSON[key].setEffectiveTimeScale(1);
             animationJSON[key].setEffectiveWeight(1);
-            animationJSON[key].play();
           }
+          if(key == 'Run' || key == 'Walk'){
+            animationJSON[key].enabled = true;
+            animationJSON[key].setEffectiveTimeScale(0);
+            animationJSON[key].setEffectiveWeight(0);
+          }
+          animationJSON[key].play();
         }
 
         // // 初始化动画
