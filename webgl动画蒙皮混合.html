@@ -37,10 +37,10 @@
 
 <body>
   <ul class="animation-menu">
-    <li>动画-等待</li>
-    <li>动画-跑</li>
-    <li>动画-模型站立</li>
-    <li>动画-行走</li>
+    <li id="Idle">动画-等待-Idle</li>
+    <li id="Run">动画-跑-Run</li>
+    <li id="TPose">动画-T姿态-TPose</li>
+    <li id="Walk">动画-步行-Walk</li>
     <li>动画速度<input id="speed" type="range" max="100" min="0"></li>
   </ul>
   <!-- 引入three.js -->
@@ -60,7 +60,8 @@
     import { GLTFLoader } from './jsm/loaders/GLTFLoader.js'; // 引入加载器
 
     let mixer; // 动画混合器
-    let animationArray = []; // 动画数组
+    let animationJSON = {}; // 动画数组
+    let activation = Object; // 激活动画
     const clock = new THREE.Clock(); // 时间对象
     const stats = new Stats(); //创建监控对象
     stats.domElement.style.position = 'absolute';
@@ -135,10 +136,13 @@
 
         // 绑定动画
         mixer = new THREE.AnimationMixer(model); // 混合器绑定模型
-        animationArray.push(mixer.clipAction(gltf.animations[0]));
-        animationArray.push(mixer.clipAction(gltf.animations[1]));
-        animationArray.push(mixer.clipAction(gltf.animations[2]));
-        animationArray.push(mixer.clipAction(gltf.animations[3]));
+        for (let i= 0; i < gltf.animations.length; i++) {
+          animationJSON[gltf.animations[i].name] = mixer.clipAction(gltf.animations[i]);
+        }
+        
+        // 初始化动画
+        animationJSON.Idle.play();
+        activation = animationJSON.Idle; // 初始化激活动画
 
         animation(); // 更新动画
       }, 
@@ -171,11 +175,26 @@
       requestAnimationFrame(animation);
     }
     // 等待
-    document.getElementsByTagName('li')[0].onclick = () => {
-      animationArray.forEach(animation => {
-        animation.stop();
-      });
-      animationArray[0].play();
+    document.getElementById('Idle').onclick = () => {
+      // if (animationJSON.Idle !== activation) {
+      //   // 判断当前动画是否和进入动画是同一个
+      //   console.log()
+      //   activation.fadeOut(0.5) // 淡出当前动画
+      // }
+      // animationJSON.Idle
+      // .reset() // 重置动作
+      // .setEffectiveTimeScale(1) // 设置时间比例 以及停用所有的变形
+      // .setEffectiveWeight(1)  // 设置权重（weight）以及停止所有淡入淡出
+      // .fadeIn(1) // 动画淡入 持续时间 duration
+      // .play(); // 播放动画
+      // 先淡入后淡出
+      for (let key in animationJSON) {
+        animationJSON[key].paused = false;
+      }
+      animationJSON.Walk.enabled = true;
+      animationJSON.Walk.setEffectiveTimeScale(1); // 设置时间比例 以及停用所有的变形
+      animationJSON.Walk.setEffectiveWeight(1);  // 设置权重（weight）以及停止所有淡入淡出
+      animationJSON.Idle.crossFadeTo(animationJSON.Walk, 1, true);
     }
     // 跑
     document.getElementsByTagName('li')[1].onclick = () => {
