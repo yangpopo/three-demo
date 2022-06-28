@@ -140,9 +140,20 @@
           animationJSON[gltf.animations[i].name] = mixer.clipAction(gltf.animations[i]);
         }
         
-        // 初始化动画
-        animationJSON.Idle.play();
-        activation = animationJSON.Idle; // 初始化激活动画
+        // 激活所有动画
+        for (let key in animationJSON) {
+          if(key == 'Idle' || key == 'Run' || key == 'Walk'){
+            // 设置权重
+            animationJSON[key].enabled = true;
+            animationJSON[key].setEffectiveTimeScale(1);
+            animationJSON[key].setEffectiveWeight(1);
+            animationJSON[key].play();
+          }
+        }
+
+        // // 初始化动画
+        // animationJSON.Idle.play();
+        // activation = animationJSON.Idle; // 初始化激活动画
 
         animation(); // 更新动画
       }, 
