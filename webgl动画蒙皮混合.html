@@ -36,14 +36,11 @@
 
 <body>
   <ul class="animation-menu">
-    <li id="Idle">动画-等待-Idle</li>
-    <li id="Run">动画-跑-Run</li>
-    <li id="TPose">动画-T姿态-TPose</li>
-    <li id="Walk">动画-步行-Walk</li>
-    <li>等待-Idle-权重<input id="IdleWeight" type="range" max="100" min="0" value="100"></li>
-    <li>跑-Run-权重<input id="RunWeight" type="range" max="100" min="0" value="0"></li>
-    <li>步行-Walk-权重<input id="WalkWeight" type="range" max="100" min="0" value="0"></li>
-    <li>动画速度<input id="speed" type="range" max="100" min="0"></li>
+    <li id="Walk_Idle">步行(Walk) -> 等待(Idle)</li>
+    <li id="Idle_Run">等待(Idle) -> 跑(Run)</li>
+    <!-- <li id="TPose">动画-T姿态-TPose</li> -->
+    <li id="Walk_Run">步行(Walk) -> 跑(Run)</li>
+    <li id="Run_Walk">跑(Run) -> 步行(Walk)</li>
   </ul>
   <!-- 引入three.js -->
   <script type="importmap">
@@ -142,26 +139,24 @@
           animationJSON[gltf.animations[i].name] = mixer.clipAction(gltf.animations[i]);
         }
         
-        // 激活所有动画
+        /*
+          激活所有动画--通过权重来控制混合动画中到底播放那个动画
+          同时播放动画可以在动画之间平稳切换
+        */
         for (let key in animationJSON) {
-          // 设置权重
-          if(key == 'Idle') {
+          // 设置权重 只把等待动画的权重设置成1 其他的都设置为0
+          if(key == 'Walk') {
             animationJSON[key].enabled = true;
             animationJSON[key].setEffectiveTimeScale(1);
             animationJSON[key].setEffectiveWeight(1);
-          }
-          if(key == 'Run' || key == 'Walk'){
+            activation = animationJSON[key]
+          } else {
             animationJSON[key].enabled = true;
             animationJSON[key].setEffectiveTimeScale(0);
             animationJSON[key].setEffectiveWeight(0);
           }
           animationJSON[key].play();
         }
-
-        // // 初始化动画
-        // animationJSON.Idle.play();
-        // activation = animationJSON.Idle; // 初始化激活动画
-
         animation(); // 更新动画
       }, 
       (res) => {
@@ -192,27 +187,92 @@
       renderer.render(scene, camera);
       requestAnimationFrame(animation);
     }
+
+    // 取消所有动画的暂停 要用权重去控制动画的播放显示
+    function unPauseAllActions() {
+      animationJSON.forEach( function ( action ) {
+        action.paused = false; // 暂停
+      } );
+    }
+
+    // 淡出-淡入动画 开始 结束过渡时间
+    function fadeOutFadeIn(startAction, endAction, duration) {
+      unPauseAllActions(); // 回复所有动画的播放
+    }
+
+    // 步行(Walk) -> 等待(Idle)
+    document.getElementById('Walk_Idle').onclick = () => {
+     
+
+    }
+
     // 等待
     document.getElementById('Idle').onclick = () => {
-      // if (animationJSON.Idle !== activation) {
-      //   // 判断当前动画是否和进入动画是同一个
-      //   console.log()
-      //   activation.fadeOut(0.5) // 淡出当前动画
-      // }
-      // animationJSON.Idle
-      // .reset() // 重置动作
-      // .setEffectiveTimeScale(1) // 设置时间比例 以及停用所有的变形
-      // .setEffectiveWeight(1)  // 设置权重（weight）以及停止所有淡入淡出
-      // .fadeIn(1) // 动画淡入 持续时间 duration
-      // .play(); // 播放动画
-      // 先淡入后淡出
+      if (animationJSON.Idle !== activation) {
+        // 判断当前动画是否和进入动画是同一个
+        console.log()
+        activation.fadeOut(0.5) // 淡出当前动画
+      }
+      animationJSON.Idle
+      .reset() // 重置动作
+      .setEffectiveTimeScale(1) // 设置时间比例 以及停用所有的变形
+      .setEffectiveWeight(1)  // 设置权重（weight）以及停止所有淡入淡出
+      .fadeIn(1) // 动画淡入 持续时间 duration
+      .play(); // 播放动画
+
+      mixer.addEventListener('loop', onLoopFinished); // 监听事件
+      function onLoopFinished(event) {
+        if (event.action == animationJSON.Walk) {
+          
+	        mixer.removeEventListener('loop', onLoopFinished); // 取消监听
+          // 取消所有暂停---让动画全都动起来
+          for (let key in animationJSON) {
+            animationJSON[key].paused = false;
+          }
+          // 设置相关权重
+          // for (let key in animationJSON) {
+          //   if(key == 'Idle') {
+          //       animationJSON[key].enabled = true;
+          //       animationJSON[key].setEffectiveTimeScale(1); // 设置时间比例 以及停用所有的变形
+          //       animationJSON[key].setEffectiveWeight(1); // 设置权重（weight）以及停止所有淡入淡出
+          //     } else {
+          //       animationJSON[key].enabled = true;
+          //       animationJSON[key].setEffectiveTimeScale(0);
+          //       animationJSON[key].setEffectiveWeight(0);
+          //     }
+          // }
+
+          animationJSON.Idle.enabled = true;
+          animationJSON.Idle.setEffectiveTimeScale(1); // 设置时间比例 以及停用所有的变形
+          animationJSON.Idle.setEffectiveWeight(1);  // 设置权重（weight）以及停止所有淡入淡出
+        
+          // 淡出--淡入
+          animationJSON.Walk.crossFadeTo(animationJSON.Idle, 1, true);
+        }
+      }
+      return
+      // 取消所有暂停---让动画全都动起来
       for (let key in animationJSON) {
         animationJSON[key].paused = false;
       }
-      animationJSON.Walk.enabled = true;
-      animationJSON.Walk.setEffectiveTimeScale(1); // 设置时间比例 以及停用所有的变形
-      animationJSON.Walk.setEffectiveWeight(1);  // 设置权重（weight）以及停止所有淡入淡出
-      animationJSON.Idle.crossFadeTo(animationJSON.Walk, 1, true);
+      // 设置相关权重
+      for (let key in animationJSON) {
+        if(key == 'Idle') {
+            animationJSON[key].enabled = true;
+            animationJSON[key].setEffectiveTimeScale(1); // 设置时间比例 以及停用所有的变形
+            animationJSON[key].setEffectiveWeight(1); // 设置权重（weight）以及停止所有淡入淡出
+          } else {
+            animationJSON[key].enabled = true;
+            animationJSON[key].setEffectiveTimeScale(0);
+            animationJSON[key].setEffectiveWeight(0);
+          }
+      }
+      // animationJSON.Walk.enabled = true;
+      // animationJSON.Walk.setEffectiveTimeScale(1); // 设置时间比例 以及停用所有的变形
+      // animationJSON.Walk.setEffectiveWeight(1);  // 设置权重（weight）以及停止所有淡入淡出
+     
+      // 淡出--淡入
+      animationJSON.Walk.crossFadeTo(animationJSON.Idle, 1, true);
     }
     // 跑
     document.getElementsByTagName('li')[1].onclick = () => {

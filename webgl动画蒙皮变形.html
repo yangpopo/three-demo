@@ -166,7 +166,7 @@
         for (let i = 0; i < gltf.animations.length; i++) {
           // 类型动画
           if (continued.indexOf(gltf.animations[i].name) >= 0) {
-            let action = mixer.clipAction(gltf.animations[i]);
+            let action = mixer.clipAction(gltf.animations[i]); // 动画片段
             if (gltf.animations[i].name == 'Standing' || gltf.animations[i].name ==  'Sitting' || gltf.animations[i].name == 'Death') {
               action.clampWhenFinished = true; // 是否在最后一针停止
               action.loop = THREE.LoopOnce; // 循环属性--只循环一次
