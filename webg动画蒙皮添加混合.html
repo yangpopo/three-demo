@@ -40,12 +40,10 @@
     <li id="headShake">摇头-headShake</li>
     <li id="idle">空闲-idle</li>
     <li id="run">跑-run</li>
-    <li style="display: none;">动画-悲伤的姿势</li>
-    <li style="display: none;">动画-潜行姿势</li>
-    <li class="walk">行走-walk</li>
-    <li>悲伤的姿势<input id="sadPose" type="range" max="100" min="0"></li>
-    <li>潜行姿势<input id="sneakPose" type="range" max="100" min="0"></li>
-    <li>动画速度<input id="speed" type="range" max="100" min="0"></li>
+    <li id="walk">行走-walk</li>
+    <li>悲伤的姿势<input id="sadPose" type="range" max="100" min="0" value="0"></li>
+    <li>潜行姿势<input id="sneakPose" type="range" max="100" min="0" value="0"></li>
+    <li>动画速度<input id="speed" type="range" max="100" min="0" value="50"></li>
   </ul>
   <!-- 引入three -->
   <script type="importmap">
@@ -77,7 +75,7 @@
     scene.fog = new THREE.Fog(new THREE.Color(0xf0f0f0), 10, 50); // 创建雾
     scene.background = new THREE.Color(0xf0f0f0);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, .6 ); // 创建半球光
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1 ); // 创建半球光
     hemiLight.position.set( 0, 20, 0 );
     scene.add(hemiLight);
 
@@ -133,6 +131,10 @@
       // 绑定动画
       mixer = new THREE.AnimationMixer(model); // 创建混合器绑定模型
       gltf.animations.forEach((item) => {
+        if (item.name.endsWith('_pose')) {
+          // 过滤掉姿势动画--对姿态动画进行剪辑
+          item = THREE.AnimationUtils.subclip( item, item.name, 2, 3, 30 );
+        }
         animationJSON[item.name] = mixer.clipAction(item); // 所有动画
       });
 
@@ -171,72 +173,80 @@
       }
     }
 
-    // 同意-agree
-    document.getElementById('agree').onclick = () => {
-      // 回复所有动画的播放状态
-      // for (let key in animationJSON) {
-      //   animationJSON[key].paused = false; // 是否暂停
-      // }
-      // 淡出淡入动画
+    // 淡出-淡入
+    function fadeOutFadeIn(endAction, duration) {
+      unPauseAllActions(); // 回复所有动画的播放状态
       mixer.addEventListener('loop', onLoopFinished);// 监听当前动画循环播放完成时执行
       function onLoopFinished(event) {
         mixer.removeEventListener('loop', onLoopFinished); // 移除监听事件
         if (event.action == activation) {
-          animationJSON.agree.enabled = true;
-          animationJSON.agree.setEffectiveTimeScale(1).setEffectiveWeight(1);
-          animationJSON.agree.time = 0; // 动作开始的时间点 (单位是秒, 从0开始计时).
+          endAction.enabled = true; // 启用/禁用
+          endAction.setEffectiveTimeScale(1).setEffectiveWeight(1);
+          endAction.time = 0; // 动作开始的时间点 (单位是秒, 从0开始计时).
           // 淡出-淡入
-          activation.crossFadeTo(animationJSON.agree, 1, true);
+          activation.crossFadeTo(endAction, duration, true);
+          activation = endAction;
         }
-        // console.log(event.action)
+      }
+    };
+
+    // 同意-agree
+    document.getElementById('agree').onclick = () => {
+      if (activation != animationJSON.agree) {
+        // 淡出淡入动画
+        fadeOutFadeIn(animationJSON.agree, 1);
       }
     }
 
-    document.getElementsByTagName('li')[1].onclick = () => {
-      animationJSON.forEach(animation => {
-        animation.stop();
-      });
-      animationJSON[1].play();
+    // 摇头-headShake
+    document.getElementById('headShake').onclick = () => {
+      if (activation != animationJSON.headShake) {
+        // 淡出淡入动画
+        fadeOutFadeIn(animationJSON.headShake, 1);
+      }
     }
-    document.getElementsByTagName('li')[2].onclick = () => {
-      animationJSON.forEach(animation => {
-        animation.stop();
-      });
-      animationJSON[2].play();
+
+    // 空闲-idle
+    document.getElementById('idle').onclick = () => {
+      if (activation != animationJSON.idle) {
+        // 淡出淡入动画
+        fadeOutFadeIn(animationJSON.idle, 1);
+      }
     }
-    document.getElementsByTagName('li')[3].onclick = () => {
-      animationJSON.forEach(animation => {
-        animation.stop();
-      });
-      animationJSON[3].play();
+
+    // 跑-run
+    document.getElementById('run').onclick = () => {
+      if (activation != animationJSON.run) {
+        // 淡出淡入动画
+        fadeOutFadeIn(animationJSON.run, 1);
+      }
     }
-    document.getElementsByTagName('li')[4].onclick = () => {
-      animationJSON.forEach(animation => {
-        animation.stop();
-      });
-      animationJSON[4].play();
-    }
-    document.getElementsByTagName('li')[5].onclick = () => {
-      animationJSON.forEach(animation => {
-        animation.stop();
-      });
-      animationJSON[5].play();
-    }
-    document.getElementsByTagName('li')[6].onclick = () => {
-      animationJSON.forEach(animation => {
-        animation.stop();
-      });
-      animationJSON[6].play();
+
+    // 行走-walk
+    document.getElementById('walk').onclick = () => {
+      if (activation != animationJSON.walk) {
+        // 淡出淡入动画
+        fadeOutFadeIn(animationJSON.walk, 1);
+      }
     }
 
     // 悲伤的姿势
     document.getElementById('sadPose').onchange = function(e) {
-      console.log(this.value / 50, "---")
+      // 设置动画权限
+      animationJSON.sad_pose.enabled = true; // 启用/禁用
+      animationJSON.sad_pose.setEffectiveTimeScale(1).setEffectiveWeight(this.value / 100)
+    }
+
+    // 潜行姿势
+    document.getElementById('sneakPose').onchange = function(e) {
+      // 设置动画权限
+      animationJSON.sneak_pose.enabled = true; // 启用/禁用
+      animationJSON.sneak_pose.setEffectiveTimeScale(1).setEffectiveWeight(this.value / 100)
     }
 
     // 动画速度
     document.getElementById('speed').onchange = function(e) {
-      mixer.timeScale = this.value / 50
+      mixer.timeScale = this.value / 50;
     }
   </script>
   
