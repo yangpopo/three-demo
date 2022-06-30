@@ -36,13 +36,13 @@
 
 <body>
   <ul class="animation-menu">
-    <li>动画-同意</li>
-    <li>动画-摇头</li>
-    <li>动画-空闲</li>
-    <li>动画-跑</li>
+    <li id="agree">同意-agree</li>
+    <li id="headShake">摇头-headShake</li>
+    <li id="idle">空闲-idle</li>
+    <li id="run">跑-run</li>
     <li style="display: none;">动画-悲伤的姿势</li>
     <li style="display: none;">动画-潜行姿势</li>
-    <li>动画-行走</li>
+    <li class="walk">行走-walk</li>
     <li>悲伤的姿势<input id="sadPose" type="range" max="100" min="0"></li>
     <li>潜行姿势<input id="sneakPose" type="range" max="100" min="0"></li>
     <li>动画速度<input id="speed" type="range" max="100" min="0"></li>
@@ -64,7 +64,8 @@
     import { GLTFLoader } from './jsm/loaders/GLTFLoader.js'; // 引入加载器
 
     let mixer; // 动画混合器
-    let animationArray = []; // 动画数组
+    let animationJSON = {}; // 所有动画
+    let activation = Object; // 激活动画
     const clock = new THREE.Clock(); // 创建时间对象
     const stats = new Stats(); // 创建统计对象
     stats.domElement.style.position = 'absolute';
@@ -111,25 +112,42 @@
     renderer.outputEncoding = THREE.sRGBEncoding; // 设置颜色模式
     document.getElementsByTagName('body')[0].appendChild(renderer.domElement); // 将渲染器添加到dom
 
+    // 辅助坐标
+    const axesHelper = new THREE.AxesHelper( 5 );
+    scene.add( axesHelper );
+
     const controls = new TrackballControls(camera, renderer.domElement); // 创建相机控制器
     controls.target = new THREE.Vector3(0, 1, 0);
 
     const loader = new GLTFLoader(); // 创建加载器
     loader.load('models/gltf/Xbot.glb', (gltf) => {
-      console.log(gltf);
       const model = gltf.scene; // 模型
       // 模型设置阴影
       model.traverse((object) => {
         if (object.isMesh) {
-          object.castShadow = true;
+          object.castShadow = true; // 对象是否被渲染到阴影贴图中
+          object.receiveShadow  = true; // 材质是否接收阴影
         }
       })
 
       // 绑定动画
       mixer = new THREE.AnimationMixer(model); // 创建混合器绑定模型
       gltf.animations.forEach((item) => {
-        animationArray.push(mixer.clipAction(item));
+        animationJSON[item.name] = mixer.clipAction(item); // 所有动画
       });
+
+      // 初始化设置所有动画权重
+      for (let key in animationJSON) {
+        if (key == 'idle') {
+          animationJSON[key].enabled = true; // 值设为false会禁用动作, 也就是无效.默认值是true
+          animationJSON[key].setEffectiveTimeScale(1).setEffectiveWeight(1);
+          activation = animationJSON[key];
+        } else {
+          animationJSON[key].enabled = true; // 值设为false会禁用动作, 也就是无效.默认值是true
+          animationJSON[key].setEffectiveTimeScale(0).setEffectiveWeight(0);
+        }
+        animationJSON[key].play(); // 所有动画都播放
+      }
 
       scene.add(model);
       animation(); // 加载完后执行
@@ -146,47 +164,69 @@
       requestAnimationFrame(animation);
     }
 
-    document.getElementsByTagName('li')[0].onclick = () => {
-      animationArray.forEach(animation => {
-        animation.stop();
-      });
-      animationArray[0].play();
+    // 取消所有动画的暂停 要用权重去控制动画的播放显示
+    function unPauseAllActions() {
+      for (let key in animationJSON) {
+        animationJSON[key].paused = false; // 是否暂停
+      }
     }
+
+    // 同意-agree
+    document.getElementById('agree').onclick = () => {
+      // 回复所有动画的播放状态
+      // for (let key in animationJSON) {
+      //   animationJSON[key].paused = false; // 是否暂停
+      // }
+      // 淡出淡入动画
+      mixer.addEventListener('loop', onLoopFinished);// 监听当前动画循环播放完成时执行
+      function onLoopFinished(event) {
+        mixer.removeEventListener('loop', onLoopFinished); // 移除监听事件
+        if (event.action == activation) {
+          animationJSON.agree.enabled = true;
+          animationJSON.agree.setEffectiveTimeScale(1).setEffectiveWeight(1);
+          animationJSON.agree.time = 0; // 动作开始的时间点 (单位是秒, 从0开始计时).
+          // 淡出-淡入
+          activation.crossFadeTo(animationJSON.agree, 1, true);
+        }
+        // console.log(event.action)
+      }
+    }
+
     document.getElementsByTagName('li')[1].onclick = () => {
-      animationArray.forEach(animation => {
+      animationJSON.forEach(animation => {
         animation.stop();
       });
-      animationArray[1].play();
+      animationJSON[1].play();
     }
     document.getElementsByTagName('li')[2].onclick = () => {
-      animationArray.forEach(animation => {
+      animationJSON.forEach(animation => {
         animation.stop();
       });
-      animationArray[2].play();
+      animationJSON[2].play();
     }
     document.getElementsByTagName('li')[3].onclick = () => {
-      animationArray.forEach(animation => {
+      animationJSON.forEach(animation => {
         animation.stop();
       });
-      animationArray[3].play();
+      animationJSON[3].play();
     }
     document.getElementsByTagName('li')[4].onclick = () => {
-      animationArray.forEach(animation => {
+      animationJSON.forEach(animation => {
         animation.stop();
       });
-      animationArray[4].play();
+      animationJSON[4].play();
     }
     document.getElementsByTagName('li')[5].onclick = () => {
-      animationArray.forEach(animation => {
+      animationJSON.forEach(animation => {
         animation.stop();
       });
-      animationArray[5].play();
+      animationJSON[5].play();
     }
     document.getElementsByTagName('li')[6].onclick = () => {
-      animationArray.forEach(animation => {
+      animationJSON.forEach(animation => {
         animation.stop();
       });
-      animationArray[6].play();
+      animationJSON[6].play();
     }
 
     // 悲伤的姿势

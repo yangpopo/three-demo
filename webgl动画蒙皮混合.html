@@ -22,7 +22,7 @@
     .animation-menu li {
       background-color: #fff;
       box-sizing: border-box;
-      padding: 5px 30px;
+      padding: 5px 10px;
       list-style: none;
       font-size: 14px;
       margin: 5px 0;
@@ -41,6 +41,7 @@
     <!-- <li id="TPose">动画-T姿态-TPose</li> -->
     <li id="Walk_Run">步行(Walk) -> 跑(Run)</li>
     <li id="Run_Walk">跑(Run) -> 步行(Walk)</li>
+    <li>动画速度<input id="speed" type="range" max="100" min="0"></li>
   </ul>
   <!-- 引入three.js -->
   <script type="importmap">
@@ -59,7 +60,7 @@
     import { GLTFLoader } from './jsm/loaders/GLTFLoader.js'; // 引入加载器
 
     let mixer; // 动画混合器
-    let animationJSON = {}; // 动画数组
+    let animationJSON = {}; // 所有动画
     let activation = Object; // 激活动画
     const clock = new THREE.Clock(); // 时间对象
     const stats = new Stats(); //创建监控对象
@@ -69,7 +70,7 @@
     document.getElementsByTagName('body')[0].appendChild(stats.domElement);
 
     const scene = new THREE.Scene(); // 创建场景
-    scene.background = new THREE.Color(0xa0a0a0); // 配置场景背景色
+    scene.background = new THREE.Color(0x505050); // 配置场景背景色
     scene.fog = new THREE.Fog( 0xa0a0a0, 1, 50 ); // 场景参数雾
 
     const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 1, 1000); // 创建摄像机
@@ -146,16 +147,16 @@
         for (let key in animationJSON) {
           // 设置权重 只把等待动画的权重设置成1 其他的都设置为0
           if(key == 'Walk') {
-            animationJSON[key].enabled = true;
+            animationJSON[key].enabled = true; // 值设为false会禁用动作, 也就是无效.默认值是true
             animationJSON[key].setEffectiveTimeScale(1);
             animationJSON[key].setEffectiveWeight(1);
-            activation = animationJSON[key]
+            activation = animationJSON[key];
           } else {
             animationJSON[key].enabled = true;
             animationJSON[key].setEffectiveTimeScale(0);
             animationJSON[key].setEffectiveWeight(0);
           }
-          animationJSON[key].play();
+          animationJSON[key].play(); // 所有动画都播放
         }
         animation(); // 更新动画
       }, 
@@ -190,111 +191,63 @@
 
     // 取消所有动画的暂停 要用权重去控制动画的播放显示
     function unPauseAllActions() {
-      animationJSON.forEach( function ( action ) {
-        action.paused = false; // 暂停
-      } );
+      for (let key in animationJSON) {
+        animationJSON[key].paused = false; // 是否暂停
+      }
     }
 
     // 淡出-淡入动画 开始 结束过渡时间
     function fadeOutFadeIn(startAction, endAction, duration) {
       unPauseAllActions(); // 回复所有动画的播放
+      if (startAction == animationJSON.Idle) {
+        // 开始动画是等待动画--等待动画可以直接开始淡出淡入
+        endAction.setEffectiveTimeScale(1).setEffectiveWeight(1);
+        // 淡出-淡入
+        startAction.crossFadeTo(endAction, duration, true);
+      } else {
+        // 开始动画不是等待动画--不是等待动画就要等当前动画循环完才进行淡出淡入
+        mixer.addEventListener('loop', onLoopFinished); // 监听当前动画循环播放完成时执行
+        function onLoopFinished(event) {
+          mixer.removeEventListener('loop', onLoopFinished); // 移除监听事件
+          if (event.action == startAction) {
+            /*
+              当前正在播放的动画和设置的开始动画一样
+              设置淡入动画的权重
+            */
+            endAction.enabled = true; // 值设为false会禁用动作, 也就是无效.默认值是true
+            endAction.setEffectiveTimeScale(1).setEffectiveWeight(1);
+            endAction.time = 0; // 动作开始的时间点 (单位是秒, 从0开始计时).
+            // 淡出-淡入
+            startAction.crossFadeTo(endAction, duration, true);
+          }
+        }
+      }
     }
 
     // 步行(Walk) -> 等待(Idle)
     document.getElementById('Walk_Idle').onclick = () => {
-     
-
+      // 淡出淡入动画
+      fadeOutFadeIn(animationJSON.Walk, animationJSON.Idle, 1);
     }
 
-    // 等待
-    document.getElementById('Idle').onclick = () => {
-      if (animationJSON.Idle !== activation) {
-        // 判断当前动画是否和进入动画是同一个
-        console.log()
-        activation.fadeOut(0.5) // 淡出当前动画
-      }
-      animationJSON.Idle
-      .reset() // 重置动作
-      .setEffectiveTimeScale(1) // 设置时间比例 以及停用所有的变形
-      .setEffectiveWeight(1)  // 设置权重（weight）以及停止所有淡入淡出
-      .fadeIn(1) // 动画淡入 持续时间 duration
-      .play(); // 播放动画
+    // 等待(Idle) -> 跑(Run)
+    document.getElementById('Idle_Run').onclick = () => {
+      // 淡出淡入动画
+      fadeOutFadeIn(animationJSON.Idle, animationJSON.Run, 1);
+    }
 
-      mixer.addEventListener('loop', onLoopFinished); // 监听事件
-      function onLoopFinished(event) {
-        if (event.action == animationJSON.Walk) {
-          
-	        mixer.removeEventListener('loop', onLoopFinished); // 取消监听
-          // 取消所有暂停---让动画全都动起来
-          for (let key in animationJSON) {
-            animationJSON[key].paused = false;
-          }
-          // 设置相关权重
-          // for (let key in animationJSON) {
-          //   if(key == 'Idle') {
-          //       animationJSON[key].enabled = true;
-          //       animationJSON[key].setEffectiveTimeScale(1); // 设置时间比例 以及停用所有的变形
-          //       animationJSON[key].setEffectiveWeight(1); // 设置权重（weight）以及停止所有淡入淡出
-          //     } else {
-          //       animationJSON[key].enabled = true;
-          //       animationJSON[key].setEffectiveTimeScale(0);
-          //       animationJSON[key].setEffectiveWeight(0);
-          //     }
-          // }
+    // 步行(Walk) -> 跑(Run)
+    document.getElementById('Walk_Run').onclick = () => {
+      // 淡出淡入动画
+      fadeOutFadeIn(animationJSON.Walk, animationJSON.Run, 1);
+    }
 
-          animationJSON.Idle.enabled = true;
-          animationJSON.Idle.setEffectiveTimeScale(1); // 设置时间比例 以及停用所有的变形
-          animationJSON.Idle.setEffectiveWeight(1);  // 设置权重（weight）以及停止所有淡入淡出
-        
-          // 淡出--淡入
-          animationJSON.Walk.crossFadeTo(animationJSON.Idle, 1, true);
-        }
-      }
-      return
-      // 取消所有暂停---让动画全都动起来
-      for (let key in animationJSON) {
-        animationJSON[key].paused = false;
-      }
-      // 设置相关权重
-      for (let key in animationJSON) {
-        if(key == 'Idle') {
-            animationJSON[key].enabled = true;
-            animationJSON[key].setEffectiveTimeScale(1); // 设置时间比例 以及停用所有的变形
-            animationJSON[key].setEffectiveWeight(1); // 设置权重（weight）以及停止所有淡入淡出
-          } else {
-            animationJSON[key].enabled = true;
-            animationJSON[key].setEffectiveTimeScale(0);
-            animationJSON[key].setEffectiveWeight(0);
-          }
-      }
-      // animationJSON.Walk.enabled = true;
-      // animationJSON.Walk.setEffectiveTimeScale(1); // 设置时间比例 以及停用所有的变形
-      // animationJSON.Walk.setEffectiveWeight(1);  // 设置权重（weight）以及停止所有淡入淡出
-     
-      // 淡出--淡入
-      animationJSON.Walk.crossFadeTo(animationJSON.Idle, 1, true);
+    // 跑(Run) -> 步行(Walk)
+    document.getElementById('Run_Walk').onclick = () => {
+      // 淡出淡入动画
+      fadeOutFadeIn(animationJSON.Run, animationJSON.Walk, 1);
     }
-    // 跑
-    document.getElementsByTagName('li')[1].onclick = () => {
-      animationArray.forEach(animation => {
-        animation.stop();
-      });
-      animationArray[1].play();
-    }
-    // 模型站立
-    document.getElementsByTagName('li')[2].onclick = () => {
-      animationArray.forEach(animation => {
-        animation.stop();
-      });
-      animationArray[2].play();
-    }
-    // 行走
-    document.getElementsByTagName('li')[3].onclick = () => {
-      animationArray.forEach(animation => {
-        animation.stop();
-      });
-      animationArray[3].play();
-    }
+    
     // 动画速度
     document.getElementById('speed').onchange = function(e) {
       mixer.timeScale = this.value / 50
