@@ -70,8 +70,8 @@
     document.getElementsByTagName('body')[0].appendChild(stats.domElement);
 
     const scene = new THREE.Scene(); // 创建场景
-    scene.background = new THREE.Color(0x505050); // 配置场景背景色
-    scene.fog = new THREE.Fog( 0xa0a0a0, 1, 50 ); // 场景参数雾
+    scene.background = new THREE.Color(0x808080); // 配置场景背景色
+    scene.fog = new THREE.Fog(0x808080, 1, 50); // 场景参数雾
 
     const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 1, 1000); // 创建摄像机
     camera.position.set(5, 2, 8);
