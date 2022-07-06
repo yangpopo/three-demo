@@ -7,6 +7,7 @@
   <title>three.js-webgl摄像机-webgl_camera</title>
   <meta name="description" content="Three.js 是一款运行在浏览器中的 3D 引擎，你可以用它在 web 中创建各种三维场景，包括了摄影机、光影、材质等各种对象。">
   <meta name="keywords" content="3d,WebGL">
+  <script src="./build/gsap.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -62,7 +63,8 @@
     let perspectiveCameraVal = {
       angle: 30,
       aspectRatio: SCREEN_WIDTH / 2 / SCREEN_HEIGHT,
-      far:15
+      far:25,
+      isDirection: true
     };
 
     // 创建场景
@@ -80,6 +82,14 @@
     const greenSphere = new THREE.Mesh(greenGeometry, greenMaterial);
     greenSphere.position.y = 5;
     whiteSphere.add(greenSphere);
+    // 设置绿色球移动
+    gsap.to(whiteSphere.children[0].position, {
+      z: 5,
+      duration:5,
+      ease: "power3.out",
+      repeat: -1,
+      yoyo: true
+    })
 
     // 创建蓝球
     const blueGeometry = new THREE.SphereGeometry( 1, 8, 8 );
@@ -101,14 +111,13 @@
     // perspectiveCameraHelper.setColors();
     scene.add(perspectiveCameraHelper);
 
-    // // 辅助坐标
-    // const axesHelper = new THREE.AxesHelper( 5 );
-    // scene.add( axesHelper );
+    // 辅助坐标
+    const axesHelper = new THREE.AxesHelper( 5 );
+    scene.add(axesHelper);
 
     // 创建正交摄像机
-    const cameraOrtho = new THREE.OrthographicCamera( 0.5 * frustumSize * aspect / - 2, 0.5 * frustumSize * aspect / 2, frustumSize / 2, frustumSize / - 2, -15, 100 );
+    const cameraOrtho = new THREE.OrthographicCamera( 0.5 * frustumSize * aspect / - 2, 0.5 * frustumSize * aspect / 2, frustumSize / 2, frustumSize / - 2, -50, 100 );
     cameraOrtho.position.set(0, 0, 3);
-    // cameraOrtho.lookAt(new THREE.Vector3(0, 0, 0));
     scene.add(cameraOrtho);
 
     // 渲染器
@@ -130,6 +139,24 @@
 
     // 动画
     function animation() {
+      if (perspectiveCameraVal.isDirection) {
+        perspectiveCameraVal.angle += 0.3;
+        perspectiveCameraVal.far += 0.2;
+        if (perspectiveCameraVal.angle >= 60) {
+          perspectiveCameraVal.isDirection = !perspectiveCameraVal.isDirection;
+        }
+      } else {
+        perspectiveCameraVal.angle -= 0.3;
+        perspectiveCameraVal.far -= 0.2;
+        if (perspectiveCameraVal.angle <= 20) {
+          perspectiveCameraVal.isDirection = !perspectiveCameraVal.isDirection;
+        }
+      }
+      perspectiveCamera.fov = perspectiveCameraVal.angle;
+      perspectiveCamera.far = perspectiveCameraVal.far;
+      perspectiveCamera.updateProjectionMatrix(); // 更新相机
+      perspectiveCameraHelper.update(); // 更新相机辅助对象
+
       stats.update(); // 刷新统计
       cameraControls.update(); // 刷新控制器
 
