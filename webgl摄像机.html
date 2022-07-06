@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>three.js-webgl摄像机-webgl_camera</title>
+  <meta name="description" content="Three.js 是一款运行在浏览器中的 3D 引擎，你可以用它在 web 中创建各种三维场景，包括了摄影机、光影、材质等各种对象。">
+  <meta name="keywords" content="3d,WebGL">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    .animation-menu {
+      position: absolute;
+      top: 0;
+      right: 0;
+      padding: 0;
+      margin: 0;
+    }
+    .animation-menu li {
+      background-color: #fff;
+      box-sizing: border-box;
+      padding: 5px 10px;
+      list-style: none;
+      font-size: 14px;
+      margin: 5px 0;
+      text-align: center;
+      cursor: pointer;
+      z-index: 9;
+    }
+    
+  </style>
+</head>
+
+<body>
+  <!-- 引入three.js -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./build/three.module.js"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from 'three'; // 引入主包
+    import Stats from './jsm/libs/stats.module.js'; // 引入性能监控
+    import { TrackballControls } from './jsm/controls/TrackballControls.js'; // 引入相机控件
+
+    // 创建性能监控
+    const stats = new Stats();
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.top = '0px';
+    stats.domElement.style.left = '0px';
+    document.getElementsByTagName('body')[0].appendChild(stats.domElement);
+
+    const frustumSize = 50; // 平截头体尺寸
+    let SCREEN_WIDTH = window.innerWidth; // 屏幕的宽
+    let SCREEN_HEIGHT = window.innerHeight; // 屏幕的高
+    let aspect = SCREEN_WIDTH / SCREEN_HEIGHT; // 屏幕宽高比
+    let perspectiveCameraVal = {
+      angle: 30,
+      aspectRatio: SCREEN_WIDTH / 2 / SCREEN_HEIGHT,
+      far:15
+    };
+
+    // 创建场景
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000); // 设置场景背景色
+
+    // 创建白球
+    const whiteGeometry = new THREE.SphereGeometry( 3, 15, 15 );
+    const whiteMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true }); // 球的颜色白色并渲染线框
+    const whiteSphere = new THREE.Mesh( whiteGeometry, whiteMaterial );
+
+    // 创建绿球
+    const greenGeometry = new THREE.SphereGeometry( 1, 8, 8 );
+    const greenMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true }); // 球的颜色绿球并渲染线框
+    const greenSphere = new THREE.Mesh(greenGeometry, greenMaterial);
+    greenSphere.position.y = 5;
+    whiteSphere.add(greenSphere);
+
+    // 创建蓝球
+    const blueGeometry = new THREE.SphereGeometry( 1, 8, 8 );
+    const blueMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff, wireframe: true }); // 球的颜色蓝色并渲染线框
+    const blueSphere = new THREE.Mesh(blueGeometry, blueMaterial);
+    scene.add(blueSphere);
+
+    // 创建物体组
+    const geometryRig = new THREE.Group(); // 创建组合
+    geometryRig.add(whiteSphere); // 白球加入组
+    geometryRig.add(blueSphere); // 蓝加入组
+    geometryRig.position.z = -15;
+    scene.add(geometryRig); // 添加进场景
+
+    // 创建透视摄像机
+    const perspectiveCamera = new THREE.PerspectiveCamera(perspectiveCameraVal.angle, perspectiveCameraVal.aspectRatio, 5, perspectiveCameraVal.far );
+    scene.add(perspectiveCamera);
+    const perspectiveCameraHelper = new THREE.CameraHelper(perspectiveCamera);
+    // perspectiveCameraHelper.setColors();
+    scene.add(perspectiveCameraHelper);
+
+    // // 辅助坐标
+    // const axesHelper = new THREE.AxesHelper( 5 );
+    // scene.add( axesHelper );
+
+    // 创建正交摄像机
+    const cameraOrtho = new THREE.OrthographicCamera( 0.5 * frustumSize * aspect / - 2, 0.5 * frustumSize * aspect / 2, frustumSize / 2, frustumSize / - 2, -15, 100 );
+    cameraOrtho.position.set(0, 0, 3);
+    // cameraOrtho.lookAt(new THREE.Vector3(0, 0, 0));
+    scene.add(cameraOrtho);
+
+    // 渲染器
+    const renderer = new THREE.WebGLRenderer({ antialias: true,preserveDrawingBuffer: true });
+    renderer.setPixelRatio(window.devicePixelRatio); // 设置像素比例
+    renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT); // 渲染器大小
+    renderer.autoClear = false; // 定义渲染器是否在渲染每一帧之前自动清除其输出
+    renderer.autoClearColor = false;
+    renderer.autoClearDepth = false;
+    renderer.autoClearStencil = false;
+
+    document.body.appendChild(renderer.domElement);
+   
+
+    // 正交相机控制器
+    const cameraControls = new TrackballControls(cameraOrtho, renderer.domElement);
+    cameraControls.staticMoving = false; // 阻尼是否被禁用
+    cameraControls.target = new THREE.Vector3(0,0,0); // 控制相机看哪里
+
+    // 动画
+    function animation() {
+      stats.update(); // 刷新统计
+      cameraControls.update(); // 刷新控制器
+
+      const r = Date.now() * 0.0005;
+      // 白球的圆周运动
+      geometryRig.position.x = 15 * Math.cos( r );
+      geometryRig.position.z = 15 * Math.sin( r );
+      geometryRig.position.y = 15 * Math.sin( r );
+      perspectiveCamera.lookAt(geometryRig.position); // 透视摄像机盯着球
+
+      renderer.clear(); // 告诉渲染器清除颜色、深度或模板缓存. 此方法将颜色缓存初始化为当前颜色。
+
+      // 创建第一个视口
+      renderer.setViewport(0, 0, SCREEN_WIDTH / 2, SCREEN_HEIGHT); // 将视口大小设置为(x, y) 宽度是屏幕的一半高度等于屏幕
+      renderer.render(scene, perspectiveCamera); // 渲染透视摄像机
+      
+      // 创建第二个视口
+      renderer.setViewport(SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_HEIGHT);
+      renderer.render(scene, cameraOrtho); // 渲染正交摄像机
+
+      requestAnimationFrame(animation);
+    }
+    animation();
+  </script>
+</body>
+</html>
