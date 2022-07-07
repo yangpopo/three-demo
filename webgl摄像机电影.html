@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>three.js-webgl摄像机电影-webgl_camera_cinematic</title>
+  <meta name="description" content="Three.js 是一款运行在浏览器中的 3D 引擎，你可以用它在 web 中创建各种三维场景，包括了摄影机、光影、材质等各种对象。">
+  <meta name="keywords" content="3d,WebGL">
+  <script src="./build/gsap.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    .animation-menu {
+      position: absolute;
+      top: 0;
+      right: 0;
+      padding: 0;
+      margin: 0;
+    }
+    .animation-menu li {
+      background-color: #fff;
+      box-sizing: border-box;
+      padding: 5px 10px;
+      list-style: none;
+      font-size: 14px;
+      margin: 5px 0;
+      text-align: center;
+      cursor: pointer;
+      z-index: 9;
+    }
+    
+  </style>
+</head>
+
+<body>
+  <!-- 引入three.js -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./build/three.module.js"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from 'three'; // 引入主包
+    import Stats from './jsm/libs/stats.module.js'; // 引入性能监控
+
+    
+    // 动画
+    function animation() {
+
+      requestAnimationFrame(animation);
+    }
+    animation();
+  </script>
+</body>
+</html>

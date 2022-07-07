@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>three.js-webgl摄像机-webgl_camera_array</title>
+  <meta name="description" content="Three.js 是一款运行在浏览器中的 3D 引擎，你可以用它在 web 中创建各种三维场景，包括了摄影机、光影、材质等各种对象。">
+  <meta name="keywords" content="3d,WebGL">
+  <script src="./build/gsap.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    .animation-menu {
+      position: absolute;
+      top: 0;
+      right: 0;
+      padding: 0;
+      margin: 0;
+    }
+    .animation-menu li {
+      background-color: #fff;
+      box-sizing: border-box;
+      padding: 5px 10px;
+      list-style: none;
+      font-size: 14px;
+      margin: 5px 0;
+      text-align: center;
+      cursor: pointer;
+      z-index: 9;
+    }
+    
+  </style>
+</head>
+
+<body>
+  <!-- 引入three.js -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./build/three.module.js"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from 'three'; // 引入主包
+    import Stats from './jsm/libs/stats.module.js'; // 引入性能监控
+
+    let aspectRatio = window.innerWidth / window.innerHeight;
+    let WIDTH = (window.innerWidth / aspectRatio) * window.devicePixelRatio;
+    let HEIGHT = (window.innerHeight / aspectRatio) * window.devicePixelRatio;
+    let WIDTHWIN = window.innerWidth;
+    let HEIGHTWIN = window.innerHeight;
+    const AMOUNT = 5;
+    let cameras = []; // 相机数组
+
+    // 创建性能监控
+    const stats = new Stats();
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.top = '0px';
+    stats.domElement.style.left = '0px';
+    document.getElementsByTagName('body')[0].appendChild(stats.domElement);
+
+    // 创建场景
+    const scene =new THREE.Scene();
+
+    // 辅助坐标
+    // const axesHelper = new THREE.AxesHelper( 5 );
+    // scene.add(axesHelper);
+
+    // 地面
+    const groundGeometry = new THREE.PlaneGeometry(10, 10);
+    const groundMaterial = new THREE.MeshPhongMaterial({color: 0x8f18a5});
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.castShadow = true; // 开启阴影
+    ground.receiveShadow = true; // 是否接受阴影
+    scene.add(ground);
+
+    // 创建立方体
+    const boxGeometry = new THREE.BoxGeometry( 1, 1, 1 );
+    const boxMaterial = new THREE.MeshPhongMaterial({color: 0x00ff00});
+    const cube = new THREE.Mesh( boxGeometry, boxMaterial );
+    cube.castShadow = true; // 开启阴影
+    cube.receiveShadow = true; // 是否接受阴影
+    cube.position.z = 3
+    scene.add(cube);
+
+    // 创建环境光
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+
+    // 创建平行光
+    const directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
+    directionalLight.castShadow = true; // 产生阴影
+    directionalLight.position.z = 5;
+    // directionalLight.target = new THREE.Vector3(0, 0, 0);
+    scene.add(directionalLight);
+
+    // 创建透视摄像机
+    for (let x = 0; x < AMOUNT; x++) {
+      for (let y = 0; y < AMOUNT; y++) {
+        const perspectiveCamera = new THREE.PerspectiveCamera(30, aspectRatio, 1, 1000);
+        perspectiveCamera.viewport = new THREE.Vector4(Math.floor(x * WIDTHWIN / AMOUNT), Math.floor(y * HEIGHTWIN / AMOUNT), Math.ceil(WIDTHWIN / AMOUNT), Math.ceil(HEIGHTWIN / AMOUNT)); // 创建四维向量--设置视口
+        perspectiveCamera.position.z = 10;
+        perspectiveCamera.position.y = -0.5;
+        perspectiveCamera.lookAt(new THREE.Vector3(0, 0, 0));
+        cameras.push(perspectiveCamera);
+      }
+    }
+    const camera = new THREE.ArrayCamera(cameras); // 创建摄像机阵列
+    camera.position.z = 3;
+   
+    scene.add(camera);
+
+    // 创建渲染器
+    const renderer = new THREE.WebGLRenderer({ antialias: true});
+    renderer.shadowMap.enabled = true; // 开启阴影
+    renderer.setPixelRatio(window.devicePixelRatio); // 设置像素比例
+    renderer.setSize(window.innerWidth, window.innerHeight); // 设置长宽
+    document.body.appendChild(renderer.domElement);
+
+    // 动画
+    function animation() {
+      cube.rotation.x += 0.01;
+      cube.rotation.z += 0.01;
+      renderer.render(scene, camera);
+      requestAnimationFrame(animation);
+    }
+    animation();
+  </script>
+</body>
+</html>
