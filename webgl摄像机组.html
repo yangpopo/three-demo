@@ -94,8 +94,8 @@
     // 创建平行光
     const directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
     directionalLight.castShadow = true; // 产生阴影
+    directionalLight.position.y = 2;
     directionalLight.position.z = 5;
-    // directionalLight.target = new THREE.Vector3(0, 0, 0);
     scene.add(directionalLight);
 
     // 创建透视摄像机
