@@ -100,27 +100,31 @@
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2(); // 鼠标的值
 
-    // 鼠标事件绑定
+    // 移动鼠标事件绑定
     document.addEventListener('mousemove', onDocumentMouseMove);
     function onDocumentMouseMove(event) {
       event.preventDefault();
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = (event.clientY / window.innerHeight) * 2 + 1;
+      mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
     }
     
     // 动画
     function animation() {
+      camera.rotation.x += 0.0005;
+      camera.rotation.z += 0.0005;
       // 通过摄像机和鼠标位置更新射线
       raycaster.setFromCamera(mouse, camera);
       // 计算物体和射线的焦点
-      const intersects = raycaster.intersectObjects(scene.children);
+      const intersects = raycaster.intersectObjects(scene.children, false);
       if (intersects.length > 0) {
+        const targetDistance = intersects[0].distance;
+        camera.focusAt( targetDistance ); // 使用电影摄像机聚焦方法
         if (INTERSECTED) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-        INTERSECTED = intersects[ 0 ].object;
+        INTERSECTED = intersects[0].object;
         INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
         INTERSECTED.material.emissive.setHex(0xff0000);
       } else {
-        if (INTERSECTED) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+        if (INTERSECTED) INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
         INTERSECTED = null;
       }
       stats.update();
