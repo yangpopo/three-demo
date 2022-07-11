@@ -231,21 +231,21 @@
     }
 
     // 悲伤的姿势
-    document.getElementById('sadPose').onchange = function(e) {
+    document.getElementById('sadPose').oninput = function(e) {
       // 设置动画权限
       animationJSON.sad_pose.enabled = true; // 启用/禁用
       animationJSON.sad_pose.setEffectiveTimeScale(1).setEffectiveWeight(this.value / 100)
     }
 
     // 潜行姿势
-    document.getElementById('sneakPose').onchange = function(e) {
+    document.getElementById('sneakPose').oninput = function(e) {
       // 设置动画权限
       animationJSON.sneak_pose.enabled = true; // 启用/禁用
       animationJSON.sneak_pose.setEffectiveTimeScale(1).setEffectiveWeight(this.value / 100)
     }
 
     // 动画速度
-    document.getElementById('speed').onchange = function(e) {
+    document.getElementById('speed').oninput = function(e) {
       mixer.timeScale = this.value / 50;
     }
   </script>

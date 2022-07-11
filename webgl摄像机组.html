@@ -125,6 +125,7 @@
     function animation() {
       cube.rotation.x += 0.01;
       cube.rotation.z += 0.01;
+      stats.update(); // 刷新统计
       renderer.render(scene, camera);
       requestAnimationFrame(animation);
     }

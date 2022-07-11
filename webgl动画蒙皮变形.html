@@ -344,13 +344,13 @@
       return val / 100
     }
     // 控制表情
-    document.getElementById("Angry").onchange = function() {
+    document.getElementById("Angry").oninput = function() {
       face.morphTargetInfluences[0] = unitConversion(this.value);
     }
-    document.getElementById("Surprised").onchange = function() {
+    document.getElementById("Surprised").oninput = function() {
       face.morphTargetInfluences[1] = unitConversion(this.value);
     }
-    document.getElementById("Sad").onchange = function() {
+    document.getElementById("Sad").oninput = function() {
       face.morphTargetInfluences[2] = unitConversion(this.value);
     }
     
