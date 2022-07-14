@@ -80,13 +80,14 @@
 
 
     const textureLoader = new THREE.TextureLoader(); // 创建纹理加载器
+
     // 加载模型
     const loader = new GLTFLoader(); // 创建模型加载器
     loader.load('models/gltf/LeePerrySmith/LeePerrySmith.glb', (gltf) => {
       let mesh = gltf.scene.children[0]; // 引出模型
       // 修改材质
       mesh.material = new THREE.MeshPhongMaterial({
-        specular: 0x111111, // 高亮的程度，越高的值越闪亮
+        specular: 0x111111, // 材质的高光颜色
         map: textureLoader.load('models/gltf/LeePerrySmith/Map-COL.jpg'),
         specularMap: textureLoader.load( 'models/gltf/LeePerrySmith/Map-SPEC.jpg' ), // 镜面反射贴图
         normalMap: textureLoader.load('models/gltf/LeePerrySmith/Infinite-Level_02_Tangent_SmoothUV.jpg'), // 法线贴图
@@ -94,8 +95,46 @@
       });
       scene.add( mesh );
       mesh.scale.set( 10, 10, 10 );
-      console.log(gltf);
+    });
+
+    // 贴花有关
+    const decalDiffuse = textureLoader.load( 'textures/decal/decal-diffuse.png' ); // 加载颜色贴图
+    const decalNormal = textureLoader.load( 'textures/decal/decal-normal.jpg' ); // 加载法线贴图
+
+    // 创建贴花材质
+    const decalMaterial = new THREE.MeshPhongMaterial({
+      specular: 0x444444, // 材质的高光颜色
+      shininess: 30, // 高亮的程度，越高的值越闪亮
+      map: decalDiffuse, // 颜色贴图
+      normalMap: decalNormal, // 法线贴图
+      normalScale: new THREE.Vector2(1, 1), // 法线贴图的强度
+      transparent: true, // 开启透明
+      depthTest: true, // 是否在渲染此材质时启用深度测试
+      depthWrite: false, // 渲染此材质是否对深度缓冲区有任何影响
+      polygonOffset: true, // 是否使用多边形偏移
+      polygonOffsetFactor: - 4, // 设置多边形偏移系数--可以更贴合模型
+      wireframe: false, // 将几何体渲染为线框。
+    });
+
+    const mouse = new THREE.Vector2(); // 创建鼠标的二维坐标
+    const raycaster = new THREE.Raycaster(); // 创建光线投射 用于计算鼠标和摄像机的位置
+
+    // 创建一个立方体--用来帮助显示
+    const mouseHelper = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 10), new THREE.MeshNormalMaterial());
+    scene.add( mouseHelper );
+
+    // 绑定移动事件
+    const intersects = []; // 相交
+    window.addEventListener('pointermove', (event) => {
+      console.log(event, "54443554656")
+      mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+      mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+      // 计算鼠标和摄像机的距离
+      raycaster.setFromCamera(mouse, camera); // 使用一个新的原点和方向来更新射线。
+      raycaster.intersectObject(mesh, false, intersects ); // 计算鼠标和模型的位置,并返回数据到intersects
     })
+
+
 
     // 创建渲染器
     const renderer = new THREE.WebGLRenderer({ antialias: true});
@@ -106,8 +145,8 @@
 
     // 创建轨道控制器
     const controls = new OrbitControls( camera, renderer.domElement );
-    controls.minDistance = 50;
-    controls.maxDistance = 200;
+    controls.minDistance = 50; // 最小滚轴
+    controls.maxDistance = 200; // 最大滚轴
 
     // 动画
     function animation() {
