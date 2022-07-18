@@ -65,8 +65,8 @@
 
     // 创建摄像机
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-    camera.position.y = 50;
-    camera.position.z = 100;
+    camera.position.y = 1;
+    camera.position.z = 2;
     scene.add(camera);
 
     scene.add(new THREE.AmbientLight(0x443333)); // 添加环境光
@@ -74,17 +74,30 @@
     // 创建平行光-前
     const dirLight1 = new THREE.DirectionalLight( 0xffddcc, 1 );
     dirLight1.position.set( 1, 0.75, 0.5 );
-    scene.add( dirLight1 );
+    scene.add(dirLight1);
 
     // 创建平行光-后
     const dirLight2 = new THREE.DirectionalLight( 0xccccff, 1 );
     dirLight2.position.set( - 1, 0.75, - 0.5 );
-    scene.add( dirLight2 );
+    scene.add(dirLight2);
 
     // 创建平面
-    const plane = new THREE.PlaneGeometry(1, 1);
+    const planeGeometry  = new THREE.PlaneGeometry(1, 1);
     const planeMesh = new THREE.MeshLambertMaterial({color: 0xe0e0e0});
+    const plane = new THREE.Mesh(planeGeometry, planeMesh);
+    plane.rotateX(- Math.PI / 2);
+    scene.add(plane);
 
+    // 创建球
+    const sphereGeometry = new THREE.SphereGeometry(0.2, 32, 16);
+    const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+    const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    sphere.position.y = 0.2;
+    scene.add(sphere);
+
+    // 坐标辅助对象
+    const axesHelper = new THREE.AxesHelper( 5 );
+    scene.add( axesHelper );
 
     // 创建渲染器
     const renderer = new THREE.WebGLRenderer({ antialias: true});
@@ -97,9 +110,12 @@
 
 
     // 动画
+    const start = Date.now();
     function animation() {
       controls.update(); // 控制器
       stats.update(); // 刷新统计
+      const timer = Date.now() - start;
+      sphere.position.y = Math.abs(Math.sin( timer * 0.002 )) + 0.2;
       renderer.render(scene, camera);
       requestAnimationFrame(animation);
     }
