@@ -89,10 +89,10 @@
     scene.add(plane);
 
     // 创建球
-    const sphereGeometry = new THREE.SphereGeometry(0.2, 32, 16);
-    const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+    const sphereGeometry = new THREE.SphereGeometry(0.4, 10, 8);
+    const sphereMaterial = new THREE.MeshPhongMaterial({ flatShading: true });
     const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-    sphere.position.y = 0.2;
+    sphere.position.y = 0.4;
     scene.add(sphere);
 
     // 坐标辅助对象
@@ -101,12 +101,17 @@
 
     // 创建渲染器
     const renderer = new THREE.WebGLRenderer({ antialias: true});
-    renderer.shadowMap.enabled = true; // 开启阴影
     renderer.setPixelRatio(window.devicePixelRatio); // 设置像素比例
     renderer.setSize(window.innerWidth, window.innerHeight); // 设置长宽
-    document.body.appendChild(renderer.domElement);
 
-    const controls = new TrackballControls(camera, renderer.domElement);
+    // 关键位置 创建Ascii效果器给渲染器
+    const effectAscii = new AsciiEffect(renderer, ' .:-+*=%@#', {invert: true});
+    effectAscii.setSize(window.innerWidth, window.innerHeight);
+    effectAscii.domElement.style.color = 'white'; // 颜色白色
+    effectAscii.domElement.style.backgroundColor = 'black'; // 背景黑
+    document.body.appendChild(effectAscii.domElement);
+
+    const controls = new TrackballControls(camera, effectAscii.domElement);
 
 
     // 动画
@@ -115,8 +120,8 @@
       controls.update(); // 控制器
       stats.update(); // 刷新统计
       const timer = Date.now() - start;
-      sphere.position.y = Math.abs(Math.sin( timer * 0.002 )) + 0.2;
-      renderer.render(scene, camera);
+      sphere.position.y = Math.abs(Math.sin( timer * 0.002 ) * 0.5) + 0.4;
+      effectAscii.render(scene, camera);
       requestAnimationFrame(animation);
     }
     animation();
