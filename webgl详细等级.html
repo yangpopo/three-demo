@@ -84,6 +84,21 @@
     // 创建网格材质--将几何体渲染为线框
     const material = new THREE.MeshLambertMaterial({ color: 0xffffff, wireframe: true });
 
+    // 随机整数
+    function randomNum(minNum,maxNum){ 
+      switch(arguments.length){ 
+        case 1: 
+          return parseInt(Math.random()*minNum+1,10); 
+        break; 
+        case 2: 
+          return parseInt(Math.random()*(maxNum-minNum+1)+minNum,10); 
+        break; 
+        default: 
+          return 0; 
+        break; 
+      } 
+    }
+
     for (let i = 0; i < 1000; i++) {
       // 多细节层次 —— 在显示网格时，根据摄像机距离物体的距离，来使用更多或者更少的几何体来对其进行显示。
       const lod = new THREE.LOD();
@@ -93,10 +108,11 @@
         lod.addLevel(mesh, geometry[j][1]);
       }
       // 随机球体的位置
-      lod.position.x = 8000 * (0.5 - Math.random());
-      lod.position.y = 8000 * (0.5 - Math.random());
-      lod.position.z = 8000 * (0.5 - Math.random());
-      lod.scale.set(2, 2, 2);
+      lod.position.x = 6000 * (0.5 - Math.random());
+      lod.position.y = 6000 * (0.5 - Math.random());
+      lod.position.z = 6000 * (0.5 - Math.random());
+      let scaleVal = randomNum(1, 5);
+      lod.scale.set(scaleVal, scaleVal, scaleVal);
       lod.rotateX(Math.PI * Math.random());
       lod.rotateY(Math.PI * Math.random());
       lod.rotateZ(Math.PI * Math.random());
@@ -123,7 +139,7 @@
 
     // 相机控制器
     const controls = new FlyControls(camera, renderer.domElement);
-    controls.movementSpeed = 1500; // 移动速度
+    controls.movementSpeed = 1000; // 移动速度
     controls.rollSpeed = Math.PI / 20;  // 旋转速度
 
     // 动画

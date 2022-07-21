@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>three.js-webgl详细等级-misc_controls_drag</title>
+  <title>three.js-webgl拖拽控制器-misc_controls_drag</title>
   <meta name="description" content="Three.js 是一款运行在浏览器中的 3D 引擎，你可以用它在 web 中创建各种三维场景，包括了摄影机、光影、材质等各种对象。">
   <meta name="keywords" content="3d,WebGL">
   <script src="./build/gsap.min.js"></script>
@@ -47,7 +47,9 @@
   <script type="module">
     import * as THREE from 'three'; // 引入主包
     import Stats from './jsm/libs/stats.module.js'; // 引入性能监控
-    import { FlyControls } from './jsm/controls/FlyControls.js'; // 引入飞行控制器
+    import { TrackballControls } from './jsm/controls/TrackballControls.js'; // 引入飞行控制器
+
+    import { DragControls } from './jsm/controls/DragControls.js'; // 引入拖拽控制器
 
 
     // 创建性能监控
@@ -59,78 +61,82 @@
 
     // 创建场景
     const scene =new THREE.Scene();
-    scene.fog = new THREE.Fog( 0x000000, 1, 4000 ); // 添加场景雾
+    scene.background = new THREE.Color(0xf0f0f0);
 
-    // 创建点光源--点光源从中心发射
-    const pointLight = new THREE.PointLight( 0xff2200 );
-    pointLight.position.set(0, 0, 0);
-    scene.add(pointLight);
+    // 创建环境光
+    const light = new THREE.AmbientLight(0x404040, 0.5); // soft white light
+    scene.add( light );
 
-    // 创建平行光
-    const dirLight = new THREE.DirectionalLight( 0xffffff );
-    dirLight.position.set( 0, 0, 1 ).normalize();
-    scene.add(dirLight);
+    // 创建聚光灯
+    const spotLight = new THREE.SpotLight({
+      color: 0xffffff,
+      intensity: 1,
+      distance: 1500
+    });
+    spotLight.position.set(0, 500, 1000);
+    spotLight.castShadow = true;
+    spotLight.shadow.camera.near = 1000;
+    spotLight.shadow.camera.far = 4000;
+    spotLight.shadow.mapSize.width = 1024;
+    spotLight.shadow.mapSize.height = 1024;
+    scene.add(spotLight);
 
+    // 创建立方
+    let boxGeometryArray = []; // 所有立方体数组
+    const box = new THREE.BoxGeometry(1, 1, 1);
 
-    // 创建圆环缓冲扭结几何体
-    const geometry = [
-      [new THREE.TorusKnotGeometry(30, 10, 40, 15), 50],
-      [new THREE.TorusKnotGeometry(25, 9, 32, 12), 500],
-      [new THREE.TorusKnotGeometry(20, 7, 24, 9), 1000],
-      [new THREE.TorusKnotGeometry(15, 5, 16, 6), 2000],
-      [new THREE.TorusKnotGeometry(10, 3, 8, 3), 3000]
-    ];
+    for (let i = 0; i < 100; i++) {
+      const mesh = new THREE.MeshLambertMaterial({
+        color: Math.random() * 0xffffff
+      });
+      const boxGeometry = new THREE.Mesh(box, mesh);
+      boxGeometry.position.x = Math.random() * 20 - 10;
+      boxGeometry.position.y = Math.random() * 10 - 5;
+      boxGeometry.position.z = Math.random() * 20 - 10;
 
-    // 创建网格材质--将几何体渲染为线框
-    const material = new THREE.MeshLambertMaterial({ color: 0xffffff, wireframe: true });
+      boxGeometry.rotation.x = Math.random() * 2 * Math.PI;
+      boxGeometry.rotation.y = Math.random() * 2 * Math.PI;
+      boxGeometry.rotation.z = Math.random() * 2 * Math.PI;
 
-    for (let i = 0; i < 1000; i++) {
-      // 多细节层次 —— 在显示网格时，根据摄像机距离物体的距离，来使用更多或者更少的几何体来对其进行显示。
-      const lod = new THREE.LOD();
-      for(let j = 0; j < geometry.length; j++) {
-        const mesh = new THREE.Mesh(geometry[j][0], material);
-        mesh.matrixAutoUpdate = false;
-        lod.addLevel(mesh, geometry[j][1]);
-      }
-      // 随机球体的位置
-      lod.position.x = 8000 * (0.5 - Math.random());
-      lod.position.y = 8000 * (0.5 - Math.random());
-      lod.position.z = 8000 * (0.5 - Math.random());
-      lod.scale.set(2, 2, 2);
-      lod.rotateX(Math.PI * Math.random());
-      lod.rotateY(Math.PI * Math.random());
-      lod.rotateZ(Math.PI * Math.random());
-      lod.updateMatrix(); // 更新局部变化
-      lod.matrixAutoUpdate = false; // 当这个属性设置了之后，它将计算每一帧的位移、旋转（四元变换）和缩放矩阵，并重新计算matrixWorld属性。
-      scene.add( lod );
+      boxGeometry.scale.x = Math.random() * 2 + 1;
+      boxGeometry.scale.y = Math.random() * 2 + 1;
+      boxGeometry.scale.z = Math.random() * 2 + 1;
+      
+      boxGeometry.castShadow = true; // 开启阴影
+      boxGeometry.receiveShadow = true; // 接受阴影
+
+      scene.add(boxGeometry);
+
+      boxGeometryArray.push(boxGeometry);
     }
-
 
     // 创建摄像机
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 15000);
-    camera.position.z = 0;
+    camera.position.z = 35;
     scene.add(camera);
 
-    // // 坐标辅助对象
-    // const axesHelper = new THREE.AxesHelper(10);
-    // scene.add(axesHelper);
+    // 坐标辅助对象
+    const axesHelper = new THREE.AxesHelper(5);
+    scene.add(axesHelper);
 
     // 创建渲染器
     const renderer = new THREE.WebGLRenderer({ antialias: true});
     renderer.setPixelRatio(window.devicePixelRatio); // 设置像素比例
     renderer.setSize(window.innerWidth, window.innerHeight); // 设置长宽
+    renderer.shadowMap.enabled = true; // 开启阴影
+    renderer.shadowMap.type = THREE.PCFShadowMap; // 阴影类型
     document.body.appendChild(renderer.domElement);
 
     // 相机控制器
-    const controls = new FlyControls(camera, renderer.domElement);
-    controls.movementSpeed = 1500; // 移动速度
-    controls.rollSpeed = Math.PI / 20;  // 旋转速度
+    const trackballControls = new TrackballControls(camera, renderer.domElement);
+
+    // 创建拖拽控制器
+    const dragControls = new DragControls( [ ...boxGeometryArray ], camera, renderer.domElement );
 
     // 动画
-    const clock = new THREE.Clock();
-    const start = Date.now();
     function animation() {
-      controls.update(clock.getDelta()); // 控制器
+      TrackballControls.update(); // 控制器
+      dragControls.update(); // 控制器
       stats.update(); // 刷新统计
       const timer = Date.now() * 0.0005;
       renderer.render(scene, camera);
