@@ -31,11 +31,20 @@
       cursor: pointer;
       z-index: 9;
     }
-    
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+    }
   </style>
 </head>
 
 <body>
+  <div id="info">
+    "Shift+鼠标" 连选
+  </div>
   <!-- 引入three.js -->
   <script type="importmap">
     {
@@ -64,16 +73,17 @@
     scene.background = new THREE.Color(0xf0f0f0);
 
     // 创建环境光
-    const light = new THREE.AmbientLight(0x404040, 0.5); // soft white light
-    scene.add( light );
+    const light = new THREE.AmbientLight(0x505050, 0.8); // soft white light
+    scene.add(light);
 
     // 创建聚光灯
     const spotLight = new THREE.SpotLight({
       color: 0xffffff,
-      intensity: 1,
-      distance: 1500
+      intensity: 2,
+      distance: 1500,
+      angle: Math.PI / 9
     });
-    spotLight.position.set(0, 500, 1000);
+    spotLight.position.set(0, 500, 2000);
     spotLight.castShadow = true;
     spotLight.shadow.camera.near = 1000;
     spotLight.shadow.camera.far = 4000;
@@ -131,12 +141,50 @@
     const trackballControls = new TrackballControls(camera, renderer.domElement);
 
     // 创建拖拽控制器
-    const dragControls = new DragControls( [ ...boxGeometryArray ], camera, renderer.domElement );
+    const dragControls = new DragControls( [ ...boxGeometryArray ], camera, renderer.domElement);
+
+    // 创建鼠标二维坐标  创建光线投射
+    const mouse = new THREE.Vector2(), raycaster = new THREE.Raycaster();
+
+    // 检查单机的地方是否与对象交集
+    function mouseIntersect() {
+      // 转换鼠标坐标
+      mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+      mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+      raycaster.setFromCamera( mouse, camera );
+      // 检测鼠标的坐标是否与物体相交, 包括他的所有后代
+      const intersections = raycaster.intersectObjects(boxGeometryArray, true );
+      return intersections
+    }
+
+    // 当鼠标按下
+    document.addEventListener("mousedown", (event) => {
+      event.preventDefault(); // 禁止默认事件
+      let intersections = mouseIntersect();
+      if ( intersections.length > 0 ) {
+        trackballControls.noRotate = true;
+      }
+    })
+
+    // 当鼠标放开
+    document.addEventListener("mouseup", (event) => {
+      event.preventDefault(); // 禁止默认事件
+      setTimeout(() => {
+        trackballControls.noRotate = false;
+      }, 100)
+    })
+
+    let enableSelection = false; // 是否启用选择
+    // 键盘按下
+    document.addEventListener("keydown", (event) => {
+      enableSelection = ( event.keyCode === 16 ) ? true : false;
+    })
+
 
     // 动画
     function animation() {
-      TrackballControls.update(); // 控制器
-      dragControls.update(); // 控制器
+      trackballControls.update(); // 控制器
+      // dragControls.update(); // 控制器
       stats.update(); // 刷新统计
       const timer = Date.now() * 0.0005;
       renderer.render(scene, camera);
