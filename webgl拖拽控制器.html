@@ -179,6 +179,9 @@
     document.addEventListener("keydown", (event) => {
       enableSelection = ( event.keyCode === 16 ) ? true : false;
     })
+    document.addEventListener("keyup", () => {
+      enableSelection = false;
+    })
 
 
     // 动画
