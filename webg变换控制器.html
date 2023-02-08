@@ -64,11 +64,20 @@
     // 创建场景
     const scene =new THREE.Scene();
 
+    // 创建渲染器
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMapEnabled = true; // 打开阴影
+    document.body.appendChild(renderer.domElement); // 渲染器添加到场景里
+
     // 创建摄像机
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
     camera.position.y = 2.5;
     camera.position.z = 2.5;
     camera.lookAt(new THREE.Vector3(0, 0, 0));
+    // 创建网格盘
+    scene.add(new THREE.GridHelper(10, 10, 0x888888, 0x444444));
     scene.add(camera);
     
 
@@ -85,7 +94,7 @@
     scene.add(dirLight1);
 
     // 创建地面
-    const groundPlane = new THREE.PlaneGeometry(2, 2);
+    const groundPlane = new THREE.PlaneGeometry(3, 3);
     const groundMaterial = new THREE.MeshBasicMaterial({color: 0x888888, side: THREE.DoubleSide} );
     const ground = new THREE.Mesh(groundPlane, groundMaterial);
     ground.position.set(0, 0, 0);
@@ -94,29 +103,32 @@
     scene.add(ground);
 
     // 可被控制的创建立方体
-    const boxPlane = new THREE.BoxGeometry( 0.8, 0.8, 0.8 );
-    const boxMaterial = new THREE.MeshPhongMaterial( {color: 0x00ff00} );
+    const boxPlane = new THREE.BoxGeometry( 0.6, 0.6, 0.6 );
+    const texture = new THREE.TextureLoader().load( 'textures/crate.gif' );
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    const boxMaterial = new THREE.MeshLambertMaterial( { map: texture, transparent: true } );
     const box = new THREE.Mesh(boxPlane, boxMaterial);
-    box.position.set(0, 0.4, 0);
+    box.position.set(0, 0.3, 0);
     box.receiveShadow = true; // 接受阴影
     scene.add(box);
 
 
-    // 创建渲染器
-    const renderer = new THREE.WebGLRenderer();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMapEnabled = true; // 打开阴影
-    document.body.appendChild(renderer.domElement); // 渲染器添加到场景里
-    
 
     // 轨迹球控制器
     const trackballControls = new TrackballControls(camera, renderer.domElement);
+
     const transformControls = new TransformControls(camera, renderer.domElement ); // 变换控制
-    transformControls.addEventListener('change', render);
-    
-    function render() {
-      renderer.render( scene, currentCamera );
-    }
+    transformControls.setMode('rotate');
+    scene.add(transformControls); // 场景添加控制器
+    transformControls.attach(boxPlane); // 添加给模型
+    // 发生变换时--渲染页面
+    // transformControls.addEventListener( 'change', render );
+    // transformControls.attach(boxPlane); // 添加变换对象
+    // transformControls.addEventListener('change', render);
+    // scene.add(transformControls);
+    // function render() {
+    //   renderer.render( scene, camera );
+    // }
 
     // 创建变换控制器
 
@@ -125,7 +137,7 @@
     function animation() {
       stats.update(); // 刷新统计
       trackballControls.update(); // 渲染控制器
-      transformControls.update(); // 渲染变换控制器
+      // transformControls.update(); // 渲染变换控制器
       renderer.render(scene, camera);
       requestAnimationFrame(animation);
     }
