@@ -129,12 +129,15 @@
       pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
     })
 
+    // 监听窗口
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize( window.innerWidth, window.innerHeight );
+    })
+
     // 光线投射用于进行鼠标拾取（在三维空间中计算出鼠标移过了什么物体）。
     const raycaster = new THREE.Raycaster();
-
-    // animationPosition.pause();
-    // animationScale.pause();
-    // animationRotation.pause();
 
     function animation() {
       controls.update(); // 控制器

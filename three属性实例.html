@@ -89,6 +89,13 @@
     const axesHelper = new THREE.AxesHelper( 5 );
     scene.add( axesHelper );
 
+    // 监听窗口
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize( window.innerWidth, window.innerHeight );
+    })
+
     // 动画
     let directionX = true;
     function animation() {
