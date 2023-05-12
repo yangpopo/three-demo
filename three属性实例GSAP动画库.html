@@ -48,6 +48,7 @@
     import * as THREE from 'three'; // 引入主包
     import Stats from './jsm/libs/stats.module.js'; // 引入性能监控
     import { OrbitControls } from './jsm/controls/OrbitControls.js'; // 引入轨道控制器
+    import { GUI } from './jsm/libs/lil-gui.module.min.js'; // gui图形控制器
 
     // 创建性能监控
     const stats = new Stats();
@@ -79,12 +80,14 @@
     const controls = new OrbitControls( camera, renderer.domElement );
     controls.minDistance = 5; // 最小滚轴
     controls.maxDistance = 100; // 最大滚轴
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 1
 
     // 创建几何体
     const geometry = new THREE.BoxGeometry( 1, 1, 1 );
     const material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
     const cube = new THREE.Mesh( geometry, material );
-    
+    cube.name = "animationBox";
     scene.add(cube);
 
     // 创建辅助坐标
@@ -136,6 +139,42 @@
       renderer.setSize( window.innerWidth, window.innerHeight );
     })
 
+    // 双击打开全屏和退出全屏
+    window.addEventListener('dblclick', () => {
+      let fullscreenElement = document.fullscreenElement;
+      if (fullscreenElement) {
+        document.exitFullscreen()
+      } else {
+        renderer.domElement.requestFullscreen();
+      }
+    })
+
+    // 创建gui用box
+    const guiGeometry = new THREE.BoxGeometry( 1, 1, 1 );
+    const guiMaterial = new THREE.MeshBasicMaterial( {color: 0xffffff} );
+    const guiCube = new THREE.Mesh( guiGeometry, guiMaterial );
+    guiCube.name = "guiBox";
+    scene.add(guiCube);
+
+    // 创建GUI图形管理工具
+    const gui = new GUI();
+    let guiPosition = gui.addFolder('位置');
+    guiPosition.add(guiCube.position, 'x', -10, 10).name('X轴位移');
+    guiPosition.add(guiCube.position, 'y', -10, 10).name('Y轴位移');
+    guiPosition.add(guiCube.position, 'z', -10, 10).name('Z轴位移');
+    let guiRotation = gui.addFolder('位置');
+    guiRotation.add(guiCube.rotation, 'x', 0, Math.PI * 2).name('X轴旋转');
+    guiRotation.add(guiCube.rotation, 'y', 0, Math.PI * 2).name('Y轴旋转');
+    guiRotation.add(guiCube.rotation, 'z', 0, Math.PI * 2).name('Z轴旋转');
+    let guiMaterialQuality  = gui.addFolder('材质有关');
+    const obj = {
+      color: 0xffffff
+    }
+    guiMaterialQuality.addColor(obj, 'color').name('表面颜色').onChange(function (value) {
+      guiCube.material.color.set(value)
+    })
+    guiMaterialQuality.add(guiCube.material, 'wireframe').name('是否渲染线框');
+
     // 光线投射用于进行鼠标拾取（在三维空间中计算出鼠标移过了什么物体）。
     const raycaster = new THREE.Raycaster();
 
@@ -149,7 +188,7 @@
       const intersects = raycaster.intersectObjects( scene.children, false );
       if (intersects.length > 1) {
         for (let i = 0; i < intersects.length; i++) {
-          if (intersects[i].object.type == 'Mesh') {
+          if (intersects[i].object.name == 'animationBox') {
             // 碰上了模型
             intersects[i].object.material.color.set(0xff0000);
             // 暂停动画
