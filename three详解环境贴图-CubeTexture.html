@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>three真实物理PBR-全局加载器</title>
+  <title>three详解环境贴图-CubeTexture</title>
   <meta name="description" content="Three.js 是一款运行在浏览器中的 3D 引擎，你可以用它在 web 中创建各种三维场景，包括了摄影机、光影、材质等各种对象。">
   <meta name="keywords" content="3d,WebGL">
   <script src="./build/gsap.min.js"></script>
@@ -65,7 +65,7 @@
     scene.add(camera);
 
     // 添加环境光
-    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.2));
 
     // 添加平行光
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
@@ -84,72 +84,45 @@
     controls.minDistance = 5; // 最小滚轴
     controls.maxDistance = 100; // 最大滚轴
 
-    // 创建全局的加载管理器
-    const loadingManager = new THREE.LoadingManager();
-    
-    // 开始加载
-    loadingManager.onStart = function (url, itemsLoaded, itemsTotal) {
-      console.log('开始加载!')
-    }
-    // 加载完成
-    loadingManager.onLoad = function () {
-      console.log( '加载完成!');
+    // 创建加载管理器
+    const manager = new THREE.LoadingManager();
+
+    manager.onLoad = function() {
+      scene.background = envMapCubeTexture; // 场景的背景图
+      scene.environment = envMapCubeTexture; // 场景的环境贴图--用了这个环境贴图就会映射到其他模型上
       info();
-    };
-    // 加载进度
-    loadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
-      console.log( '加载进度:' + (itemsLoaded / itemsTotal * 100).toFixed(2) + '%' );
-    };
-    // 加载错误
-    loadingManager.onError = function ( url ) {
-      console.log( '加载错误:' + url );
-    };
-
-    // 创建纹理加载器
-    const texture = new THREE.TextureLoader(loadingManager);
-    // 加载纹理贴图
-    const doorMap = texture.load('./resource/door/texture.jpg');
-    // doorMap.center.set(0.5, 0.5); // 设置纹理贴图旋转中心
-    // doorMap.rotation = Math.PI / 4;
-
-    // 透明贴图
-    const doorAlphaMap = texture.load('./resource/door/transparent.jpg');
-
-    // ao环境光阴影贴图
-    const doorAoMap = texture.load('./resource/door/ambientOcclusion.jpg');
-
-    // 置换贴图--位移顶点
-    const doorDisplacementMap  = texture.load('./resource/door/displace.png');
-
-    // 粗糙度贴图
-    const doorRoughnessMap  = texture.load('./resource/door/roughness.png');
-
-    // 金属贴图
-    const doorMetalnessMap  = texture.load('./resource/door/metalness.png');
-
-    // 法线贴图
-    const doorNormalMap  = texture.load('./resource/door/NormalMap.png');
+      console.log('加载完成!')
+    }
+    manager.onProgress = function(url, itemsLoaded, itemsTotal) {
+      console.log( '加载进度: ' + (itemsLoaded / itemsTotal * 100).toFixed(2) + '%' );
+    }
+    // 创建环境加载器
+    const cubeTextureLoader = new THREE.CubeTextureLoader(manager);
+    const envMapCubeTexture = cubeTextureLoader.setPath( './resource/cubeTexture/' ).load([
+      'posx.jpg',
+      'negx.jpg',
+      'posy.jpg',
+      'negy.jpg',
+      'posz.jpg',
+      'negz.jpg',
+    ]);
 
 
+
+    
     // 初始化
     function info () {
-      console.log("初始化--开始!")
       // 创建几何体
-      const geometry = new THREE.BoxGeometry(3, 3, 3, 100, 100 ,100);
-      geometry.setAttribute('uv2', new THREE.BufferAttribute(geometry.attributes.uv.array, 2)); // 因为ao环境贴图-添加第二组uv
-      const materialAo = new THREE.MeshStandardMaterial({
-        map: doorMap, // 颜色纹理贴图
-        aoMap: doorAoMap, // ao环境贴图
-        transparent: true, // 开启透明
-        alphaMap: doorAlphaMap, // 透明贴图
-        displacementMap: doorDisplacementMap, // 置换贴图
-        displacementScale: .1, // 置换程度
-        roughnessMap: doorRoughnessMap, // 粗糙度贴图
-        metalnessMap: doorMetalnessMap, // 金属度贴图
-        normalMap: doorNormalMap, // 法线贴图
+      const geometry = new THREE.SphereGeometry(1.5, 50, 50);
+      const materialCubeTexture = new THREE.MeshStandardMaterial({
+        roughness: 0.1, // 粗糙度
+        metalness: 0.8, // 金属化
+        envMap: envMapCubeTexture, // 环境贴图
+        envMapIntensity: 0.9, // 通过乘以环境贴图的颜色来缩放环境贴图的效果
+
       });
-      const cubeAo = new THREE.Mesh( geometry, materialAo );
-      scene.add(cubeAo);
+      const cubeCubeTexture = new THREE.Mesh( geometry, materialCubeTexture );
+      scene.add(cubeCubeTexture);
 
       // 创建辅助坐标
       const axesHelper = new THREE.AxesHelper( 5 );
