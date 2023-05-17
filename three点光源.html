@@ -115,7 +115,7 @@
       color: 0xffffff
     });
     const spherePointLight = new THREE.Mesh(spherePoint, sphereBasicMaterial);
-    spherePointLight.position.set(10, 8, 10);
+    spherePointLight.position.set(10, 10, 10);
     spherePointLight.add(pointLight);
     scene.add(spherePointLight);
 
@@ -152,7 +152,7 @@
       let time = timeClock.getElapsedTime();
       spherePointLight.position.x = Math.sin(time) * 10;
       spherePointLight.position.z = Math.cos(time) * 10;
-      spherePointLight.position.y = Math.sin(time) * 2 + 5;
+      spherePointLight.position.y = Math.sin(time * 5) * 2 + 8;
 
       controls.update(); // 控制器
       stats.update(); // 刷新统计
