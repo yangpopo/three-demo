@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>three聚光灯</title>
+  <title>three点光源</title>
   <meta name="description" content="Three.js 是一款运行在浏览器中的 3D 引擎，你可以用它在 web 中创建各种三维场景，包括了摄影机、光影、材质等各种对象。">
   <meta name="keywords" content="3d,WebGL">
   <script src="./build/gsap.min.js"></script>
@@ -82,7 +82,7 @@
     // 创建轨道控制器
     const controls = new OrbitControls( camera, renderer.domElement );
     controls.minDistance = 5; // 最小滚轴
-    controls.maxDistance = 100; // 最大滚轴
+    controls.maxDistance = 100; // 最大滚轴  
 
 
     // 创建几何体
@@ -104,21 +104,27 @@
     sphereGui.add(sphereMaterial.position, 'y', 1, 15).name('Y轴').step('0.01');
     sphereGui.add(sphereMaterial.position, 'z', -10, 10).name('Z轴').step('0.01');
 
-    // 添加聚光灯
-    const spotLight = new THREE.SpotLight(0xffffff, .8);
-    spotLight.position.set(0, 10, 20);
-    spotLight.castShadow = true; // 开启灯光阴影
-    spotLight.shadow.mapSize.set(2048, 2048); // 阴影贴图尺寸大小
-    spotLight.target = sphereMaterial;
-    scene.add(spotLight);
+    // 创建点光源
+    const pointLight = new THREE.PointLight(0xff0000, 1, 0);
+    pointLight.castShadow = true; // 开启灯光阴影
+    pointLight.shadow.mapSize.set(2048, 2048); // 阴影贴图尺寸大小
 
-    // 灯光gui控制组
-    const spotLightGui = gui.addFolder('灯光制组');
-    spotLightGui.add(spotLight, 'intensity', 0, 1).name('光照强度').step('0.01');
-    spotLightGui.add(spotLight, 'distance', 1, 100).name('光源最大距离').step('0.01');
-    spotLightGui.add(spotLight, 'angle', Math.PI * 0.01, Math.PI * 0.5).name('光线散射角度').step('0.01');
-    spotLightGui.add(spotLight, 'penumbra', 0, 1).name('半影衰减').step('0.01');
-    spotLightGui.add(spotLight, 'decay', 0, 1).name('光照距离衰减量').step('0.01');
+    //创建小球模拟点光源位置
+    const spherePoint = new THREE.SphereGeometry(0.5, 20, 20);
+    const sphereBasicMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff
+    });
+    const spherePointLight = new THREE.Mesh(spherePoint, sphereBasicMaterial);
+    spherePointLight.position.set(10, 8, 10);
+    spherePointLight.add(pointLight);
+    scene.add(spherePointLight);
+
+    // 点光源gui控制组
+    const pointLightGui = gui.addFolder('灯光制组');
+    pointLightGui.addColor(pointLight, 'color').name('灯光颜色');
+    pointLightGui.add(pointLight, 'intensity', 0, 1).name('光照强度').step('0.01');
+    pointLightGui.add(pointLight, 'distance', 0, 100).name('光源最大距离').step('0.01');
+    pointLightGui.add(pointLight, 'decay', 0, 1).name('光照距离衰减量').step('0.01');
      
 
     // 创建平面
@@ -139,8 +145,15 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     })
 
+    const timeClock = new THREE.Clock();
     // 动画
     function animation() {
+      // 点灯光旋转动画
+      let time = timeClock.getElapsedTime();
+      spherePointLight.position.x = Math.sin(time) * 10;
+      spherePointLight.position.z = Math.cos(time) * 10;
+      spherePointLight.position.y = Math.sin(time) * 2 + 5;
+
       controls.update(); // 控制器
       stats.update(); // 刷新统计
       renderer.render(scene, camera);
