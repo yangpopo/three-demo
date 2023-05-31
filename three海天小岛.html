@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js - water</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	</head>
+	<body>
+
+		<div id="container"></div>
+		<!-- Import maps polyfill -->
+		<!-- Remove this when import maps will be widely supported -->
+		<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js"
+				}
+			}
+		</script>
+
+		<script type="module">
+
+			import * as THREE from 'three';
+
+			import { GUI } from './jsm/libs/lil-gui.module.min.js';
+			import { OrbitControls } from './jsm/controls/OrbitControls.js';
+			import { Water } from './jsm/objects/Water2.js';
+
+      import { DRACOLoader } from './jsm/loaders/DRACOLoader.js'; // 引入DRACOLoader加载器
+      import { GLTFLoader } from './jsm/loaders/GLTFLoader.js'; // 引入GLTFLoader加载器 JSON|二进制
+
+
+			let scene, camera, clock, renderer, water;
+
+			let torusKnot;
+      let mixer; // 动画混合器
+
+			const params = {
+				color: '#d6edff',
+				scale: 4,
+				flowX: 1,
+				flowY: 1
+			};
+
+			init(); /* 初始化 */
+
+			function init() {
+
+				// 创建场景
+				scene = new THREE.Scene();
+
+				// 创建摄像头
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 200 );
+				camera.position.set( - 15, 5, 8 ); /* 摄像头位置 */
+				camera.lookAt( scene.position ); /* 摄像头看的位置 */
+
+				// 创建时间对象
+				clock = new THREE.Clock();
+
+				// 水面
+				const waterGeometry = new THREE.PlaneGeometry(400, 400);
+				water = new Water( waterGeometry, {
+					color: params.color, /* 水的颜色 */
+					scale: params.scale, /* 水流大小 */
+					flowDirection: new THREE.Vector2( params.flowX, params.flowY ), /* 水流方向 */
+					textureWidth: 1024,
+					textureHeight: 1024
+				} );
+
+				water.position.y = 1;
+				water.rotation.x = Math.PI * - 0.5;
+				scene.add( water );
+
+        // 创建视频天空
+        let videoSky = document.createElement("video");
+        videoSky.src = './resource/oceanSky/sky.mp4';
+        videoSky.muted = true; // 静音
+        videoSky.loop = true; // 循环
+        videoSky.play(); // 播放视频
+        const skySphere = new THREE.SphereGeometry(100, 500, 500);
+        const videoTexture = new THREE.VideoTexture(
+          videoSky, 
+          THREE.CubeUVReflectionMapping
+        ); // 加载视频贴图
+        videoTexture.center.set(0.5, 0.5); // 旋转中心
+        // videoTexture.rotation = Math.PI / 2; // 旋转
+        const skyMaterial = new THREE.MeshBasicMaterial({
+          map: videoTexture
+        });
+        const skySphereMaterial = new THREE.Mesh(skySphere, skyMaterial);
+        skySphereMaterial.position.set(0, 0, 0);
+        skySphereMaterial.geometry.scale(1, 1, -1); // 切换z轴渲染方向
+        scene.add(skySphereMaterial);
+
+        /* 环境光 */
+        scene.background = new THREE.Color(0xe4f5ff); // 设置场景背景色
+				const ambientLight = new THREE.AmbientLight( 0xffffff, 0.3 );
+				scene.add( ambientLight );
+
+        /* 平行光 */
+				const directionalLight = new THREE.DirectionalLight( 0xffffff, 0.6 );
+				directionalLight.position.set( - 1, 1, 1 );
+				scene.add( directionalLight );
+
+        // 加载模型文件
+        const dracoLoader = new DRACOLoader(); // 创建加载器
+        dracoLoader.setDecoderPath('js/libs/draco/gltf/'); // 加载压缩文件
+        const loader = new GLTFLoader(); // 创建加载器
+        loader.setDRACOLoader(dracoLoader); // 解压压缩文件
+        // 加载模型贴图文件
+        loader.load('./models/gltf/LittlestTokyo.glb', (gltf) => {
+          const model = gltf.scene; // 获取模型
+          model.position.set( 0, 3, 0 );
+          model.scale.set(0.01, 0.01, 0.01);// 缩放模型
+          scene.add(model); // 添加模型
+          // 绑定动画
+          mixer = new THREE.AnimationMixer(model); // 混合器绑定模型
+          mixer.clipAction(gltf.animations[0]).play();
+          animate(); /* 加载完成--开始动画 */
+        }, (res) => {
+          console.log('加载进度:', ((res.loaded / res.total) * 100).toFixed(2) + '%');
+        })
+
+				// 渲染器
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setSize(window.innerWidth, window.innerHeight);
+				renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.outputEncoding = THREE.sRGBEncoding; // 设置颜色模式
+				document.body.appendChild(renderer.domElement);
+
+				// gui
+				const gui = new GUI();
+				gui.addColor( params, 'color' ).onChange( function ( value ) {
+					water.material.uniforms[ 'color' ].value.set( value );
+				} );
+				gui.add( params, 'scale', 1, 10 ).onChange( function ( value ) {
+					water.material.uniforms[ 'config' ].value.w = value;
+				} );
+				gui.add( params, 'flowX', - 1, 1 ).step( 0.01 ).onChange( function ( value ) {
+					water.material.uniforms[ 'flowDirection' ].value.x = value;
+					water.material.uniforms[ 'flowDirection' ].value.normalize();
+				} );
+				gui.add( params, 'flowY', - 1, 1 ).step( 0.01 ).onChange( function ( value ) {
+					water.material.uniforms[ 'flowDirection' ].value.y = value;
+					water.material.uniforms[ 'flowDirection' ].value.normalize();
+				} );
+				gui.open();
+
+        /* 控制器 */
+				const controls = new OrbitControls( camera, renderer.domElement );
+				controls.minDistance = 5;
+				controls.maxDistance = 50;
+
+				window.addEventListener( 'resize', onWindowResize );
+			}
+
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function animate() {
+				requestAnimationFrame( animate );
+        const delta = clock.getDelta();
+        mixer.update(delta); // 混合器时间并更新动画
+				renderer.render( scene, camera );
+			}
+		</script>
+
+</body>
+</html>

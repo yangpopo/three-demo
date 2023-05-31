@@ -104,7 +104,7 @@
         map: panoramaMap,
       })
       const boxMaterial = new THREE.Mesh(box, sphere);
-      boxMaterial.geometry.scale(1, 1, -1);
+      boxMaterial.geometry.scale(1, 1, -1); // 切换z轴渲染方向
       boxMaterial.position.set(0, 2, 0);
       scene.add(boxMaterial);
 
