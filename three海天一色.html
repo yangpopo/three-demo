@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>three海天一色</title>
+    <meta
+      name="description"
+      content="Three.js 是一款运行在浏览器中的 3D 引擎，你可以用它在 web 中创建各种三维场景，包括了摄影机、光影、材质等各种对象。"
+    />
+    <meta name="keywords" content="3d,WebGL" />
+    <script src="./build/gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      .animation-menu {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 0;
+        margin: 0;
+      }
+      .animation-menu li {
+        background-color: #fff;
+        box-sizing: border-box;
+        padding: 5px 10px;
+        list-style: none;
+        font-size: 14px;
+        margin: 5px 0;
+        text-align: center;
+        cursor: pointer;
+        z-index: 9;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- 引入three.js -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./build/three.module.js"
+        }
+      }
+    </script>
+    <script type="module">
+      import * as THREE from "three"; // 引入主包
+      import Stats from "./jsm/libs/stats.module.js"; // 引入性能监控
+      import { OrbitControls } from "./jsm/controls/OrbitControls.js"; // 引入轨道控制器
+      import { GUI } from "./jsm/libs/lil-gui.module.min.js"; // gui图形控制器
+      import { Water } from "./jsm/objects/Water2.js";
+
+      // 创建性能监控
+      const stats = new Stats();
+      stats.domElement.style.position = "absolute";
+      stats.domElement.style.top = "0px";
+      stats.domElement.style.left = "0px";
+      document.getElementsByTagName("body")[0].appendChild(stats.domElement);
+
+      // 创建加载管理器
+      const manager = new THREE.LoadingManager();
+      manager.onLoad = function () {
+        scene.background = panoramaTexture; // 场景的背景图
+        console.log("加载完成!");
+        info();
+      };
+      manager.onProgress = function (url, itemsLoaded, itemsTotal) {
+        console.log(
+          "加载进度: " + ((itemsLoaded / itemsTotal) * 100).toFixed(2) + "%"
+        );
+      };
+
+      // 创建场景
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.Fog(new THREE.Color(0x000000), 5, 100); // 创建雾
+
+      // 创建纹理加载器
+      const texture = new THREE.TextureLoader(manager);
+      const panoramaTexture = texture.load("./resource/seaStar/xingkong.jpg");
+      panoramaTexture.mapping = THREE.EquirectangularRefractionMapping; // 切换成球形映射模式
+
+      // 创建摄像机
+      const camera = new THREE.PerspectiveCamera(
+        45,
+        window.innerWidth / window.innerHeight,
+        1,
+        1000
+      );
+      camera.position.set(0, 3, -15);
+      scene.add(camera);
+
+      // 添加环境光
+      scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+
+      // 创建GUI图形管理工具
+      const gui = new GUI();
+
+      // 添加平行光
+      const spotLight = new THREE.SpotLight(0xffffff, 0.5);
+      spotLight.position.set(100, 1000, 100);
+      spotLight.castShadow = true; // 开启灯光阴影
+      // 灯光阴影的属性
+      spotLight.shadow.radius = 10; // 阴影的模糊
+      spotLight.shadow.mapSize.set(2048, 2048); // 阴影贴图尺寸大小
+      // 阴影--灯光的相机设置
+      spotLight.shadow.camera.near = 500;
+      spotLight.shadow.camera.far = 4000;
+      spotLight.shadow.camera.fov = 30;
+      scene.add(spotLight);
+
+      // 创建渲染器
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.shadowMap.enabled = true; // 开启阴影
+      renderer.setPixelRatio(window.devicePixelRatio); // 设置像素比例
+      renderer.setSize(window.innerWidth, window.innerHeight); // 设置长宽
+      document.body.appendChild(renderer.domElement);
+
+      // 创建轨道控制器
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableZoom = false; // 禁止缩放
+
+      /* 加载水面贴图 */
+      const flowMap = texture.load("textures/water/Water_1_M_Flow.jpg");
+
+      const californiaPts = [];
+      californiaPts.push(new THREE.Vector2(10, 20));
+      californiaPts.push(new THREE.Vector2(8, 25));
+      californiaPts.push(new THREE.Vector2(0, 30));
+      californiaPts.push(new THREE.Vector2(5, 40));
+      californiaPts.push(new THREE.Vector2(50, 45));
+      californiaPts.push(new THREE.Vector2(62, 48));
+      californiaPts.push(new THREE.Vector2(75, 48));
+      californiaPts.push(new THREE.Vector2(105, 57));
+      californiaPts.push(new THREE.Vector2(95, 56));
+      californiaPts.push(new THREE.Vector2(89, 53));
+      californiaPts.push(new THREE.Vector2(80, 48));
+      californiaPts.push(new THREE.Vector2(75, 42));
+      californiaPts.push(new THREE.Vector2(68, 40));
+      californiaPts.push(new THREE.Vector2(65, 38));
+      californiaPts.push(new THREE.Vector2(60, 30));
+      californiaPts.push(new THREE.Vector2(55, 28));
+      californiaPts.push(new THREE.Vector2(50, 27));
+      californiaPts.push(new THREE.Vector2(40, 25));
+      californiaPts.push(new THREE.Vector2(32, 23));
+      californiaPts.push(new THREE.Vector2(28, 21));
+      californiaPts.push(new THREE.Vector2(20, 18));
+
+      for (let i = 0; i < californiaPts.length; i++)
+        californiaPts[i].multiplyScalar(0.25);
+
+      const californiaShape = new THREE.Shape(californiaPts);
+      const extrudeSettings = {
+        depth: 1,
+        bevelEnabled: true,
+        bevelSegments: 2,
+        steps: 2,
+        bevelSize: 1,
+        bevelThickness: 1,
+      };
+
+      // 初始化
+      function info() {
+        // 创建海平面
+        const plane = new THREE.PlaneGeometry(100, 100);
+        const planeMesh = new Water(plane, {
+          scale: 2,
+          fog: true /* 被雾影响 */,
+          textureWidth: 1024,
+          textureHeight: 1024,
+          flowMap: flowMap,
+        });
+        planeMesh.rotation.x = -Math.PI / 2;
+        planeMesh.position.y = 1;
+        planeMesh.receiveShadow = true; // 开启接收阴影
+        scene.add(planeMesh);
+
+        /* 创建大陆 */
+        addShape(
+          californiaShape,
+          extrudeSettings,
+          0x9f9f9f,
+          10,
+          1,
+          -5,
+          Math.PI / 2,
+          0,
+          Math.PI / 2,
+          3,
+          3,
+          1
+        );
+
+        /* 创建大山 */
+        const dashanMaterial = new THREE.MeshPhongMaterial({
+          color: 0x9f9f9f,
+          fog: true /* 被雾影响 */,
+        });
+        const dashan01 = new THREE.ConeGeometry(2, 3, 5);
+        const dashanMesh01 = new THREE.Mesh(dashan01, dashanMaterial);
+        dashanMesh01.position.set(-5, 3, 5);
+        scene.add(dashanMesh01);
+
+        const dashan02 = new THREE.ConeGeometry(1, 2, 5);
+        const dashanMesh02 = new THREE.Mesh(dashan02, dashanMaterial);
+        dashanMesh02.position.set(-3.2, 2.5, 3);
+        scene.add(dashanMesh02);
+
+        const dashan03 = new THREE.ConeGeometry(2, 4, 5);
+        const dashanMesh03 = new THREE.Mesh(dashan03, dashanMaterial);
+        dashanMesh03.position.set(-7, 2.5, 5);
+        scene.add(dashanMesh03);
+
+        /* 三色光球 */
+        const redGeometry = new THREE.SphereGeometry(0.15, 32, 32);
+        const redMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const redSphere = new THREE.Mesh(redGeometry, redMaterial);
+        const redLight = new THREE.PointLight(0xff0000, 2, 1000);
+        redSphere.add(redLight);
+        redSphere.position.set(3, 0, 0);
+
+        const greenGeometry = new THREE.SphereGeometry(0.15, 32, 32);
+        const greenMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        const greenSphere = new THREE.Mesh(greenGeometry, greenMaterial);
+        const greenLight = new THREE.PointLight(0x00ff00, 2, 1000);
+        greenSphere.add(greenLight);
+        greenSphere.position.set(-2, 0, 4);
+
+        const blueGeometry = new THREE.SphereGeometry(0.15, 32, 32);
+        const blueMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+        const blueSphere = new THREE.Mesh(blueGeometry, blueMaterial);
+        const blueLight = new THREE.PointLight(0x0000ff, 1, 1000);
+        blueSphere.add(blueLight);
+        blueSphere.position.set(-2, 0, -4);
+
+        const group = new THREE.Group();
+        group.add(redSphere);
+        group.add(greenSphere);
+        group.add(blueSphere);
+        scene.add(group);
+        group.position.set(-5, 5, 5);
+
+        // 创建辅助坐标
+        const axesHelper = new THREE.AxesHelper(5);
+        scene.add(axesHelper);
+
+        /* 创建星星 */
+        const allStar = new THREE.InstancedMesh(
+          new THREE.SphereGeometry(0.05, 10, 10),
+          new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            emissive: 0xffffff, /* 自发光 */
+            emissiveIntensity: 10, /* 自发光强度 */
+          }),
+          200 /* 创建数量 */
+        );
+        let starInitPosition = []; // 星星初始位置
+        for (let i = 0; i < 200; i++) {
+          let x = Math.random()* 100 - 50;
+          let y = Math.random()* 100;
+          let z = Math.random()* 100 - 50;
+          starInitPosition.push(new THREE.Vector3(x, y, z));
+          /* 创建矩阵 */
+          let matrix = new THREE.Matrix4();
+          matrix.setPosition(x, y, z);
+          allStar.setMatrixAt(i, matrix);
+        }
+        scene.add(allStar);
+
+        /* 创建爱心路径 */
+        const x = 0, y = 28;
+        const radius = 21;
+        const c = 0.551915024494 * radius;
+
+        const love = new THREE.Shape()
+        .moveTo(x, y+radius/3)
+        .bezierCurveTo(x+c,y+radius, x+radius, y+c, x+radius, y)
+        .bezierCurveTo(x+radius,y-c, x+c, y-radius/2, x, y-radius)
+        .bezierCurveTo(x-c,y-radius/2, x-radius, y-c, x-radius, y)
+        .bezierCurveTo(x-radius,y+c, x-c, y+radius, x, y+radius/3)
+        
+        /* 根据路径获取200个点 */
+        let endInitPosition = []; // 星星初始位置
+        let center = new THREE.Vector3(0, 2, 10); /* 设置爱心中心位置 */
+        for (let i = 0; i < 200; i++) {
+          let point = love.getPoint(i / 200);
+          endInitPosition.push(new THREE.Vector3(
+            point.x * 0.2, 
+            point.y * 0.2, 
+            point.z
+          ));
+        }
+        /* 创建爱心动画 */
+        function loveAnimation(state = true) {
+          let params = {
+            time: 0,
+          }
+          gsap.to(params, {
+            time: 1,
+            duration: 1,
+            onUpdate: () => {
+              for (let i = 0; i < 200; i++) {
+                let x, y, z;
+                if (state) {
+                  x = starInitPosition[i].x + (endInitPosition[i].x - starInitPosition[i].x) * params.time;
+                  y = starInitPosition[i].y + (endInitPosition[i].y - starInitPosition[i].y) * params.time;
+                  z = starInitPosition[i].z + (endInitPosition[i].z - starInitPosition[i].z) * params.time;
+                } else {
+                  x = endInitPosition[i].x + (starInitPosition[i].x - endInitPosition[i].x) * params.time;
+                  y = endInitPosition[i].y + (starInitPosition[i].y - endInitPosition[i].y) * params.time;
+                  z = endInitPosition[i].z + (starInitPosition[i].z - endInitPosition[i].z) * params.time;
+                }
+                let matrix = new THREE.Matrix4();
+                matrix.setPosition(x, y, z);
+                allStar.setMatrixAt(i, matrix);
+              }
+              allStar.instanceMatrix.needsUpdate = true; /* 打开更新 */
+            }
+          })
+        }
+        
+
+
+        // 监听窗口
+        window.addEventListener("resize", () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        /* 镜头动画 */
+        function shotAnimation(
+          target = { x: 0, y: 0, z: 0 },
+          shot = { x: 0, y: 0, z: 0 }
+        ) {
+          /* 镜头动画 */
+          gsap.to(camera.position, {
+            duration: 1,
+            x: shot.x,
+            y: shot.y,
+            z: shot.z,
+            ease: "power3.out", // 运动状态
+          });
+          /* 控制器动画 */
+          gsap.to(controls.target, {
+            duration: 1,
+            x: target.x,
+            y: target.y,
+            z: target.z,
+            ease: "power3.out", // 运动状态
+          });
+        }
+
+        let animationCount = 0;
+        document
+          .getElementsByTagName("body")[0]
+          .addEventListener("wheel", (data) => {
+            if (data.deltaY < 0) {
+              console.log("向上", animationCount);
+              animationCount++;
+            } else {
+              console.log("向下");
+              animationCount--;
+            }
+            if (animationCount <= 0) {
+              animationCount = 0;
+            } else if (animationCount > 3) {
+              animationCount = 3;
+            }
+            if (animationCount == 0) {
+              shotAnimation(
+                {
+                  x: 0,
+                  y: 0,
+                  z: 0,
+                },
+                {
+                  x: 0,
+                  y: 3,
+                  z: -15,
+                }
+              );
+            } else if (animationCount == 1) {
+              loveAnimation(false);
+              shotAnimation(
+                {
+                  x: -4,
+                  y: 1,
+                  z: 5,
+                },
+                {
+                  x: -8,
+                  y: 15,
+                  z: 25,
+                }
+              );
+            } else if (animationCount == 3) {
+              loveAnimation(true);
+              shotAnimation(
+                {
+                  x: -4,
+                  y: 1,
+                  z: 5,
+                },
+                {
+                  x: 18,
+                  y: 15,
+                  z: -20,
+                }
+              );
+            }
+          });
+        
+
+        const timeClock = new THREE.Clock();
+        // 动画
+        function animation() {
+          controls.update(); // 控制器
+          stats.update(); // 刷新统计
+          let time = timeClock.getElapsedTime();
+          // group.rotation.x = Math.sin(time) * 5;
+          group.rotation.y = Math.sin(time) * 5;
+          group.rotation.z = Math.sin(time) * 5;
+
+          renderer.render(scene, camera);
+          requestAnimationFrame(animation);
+        }
+        animation();
+      }
+
+      function addShape(
+        shape,
+        extrudeSettings,
+        color,
+        x,
+        y,
+        z,
+        rx,
+        ry,
+        rz,
+        sx = 1,
+        sy = 1,
+        sz = 1
+      ) {
+        let geometry = new THREE.ShapeGeometry(shape);
+        let mesh = new THREE.Mesh(
+          geometry,
+          new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            fog: true /* 被雾影响 */,
+          })
+        );
+        geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        mesh = new THREE.Mesh(
+          geometry,
+          new THREE.MeshPhongMaterial({ color: color })
+        );
+        mesh.position.set(x, y, z);
+        mesh.rotation.set(rx, ry, rz);
+        mesh.scale.set(sx, sy, sz);
+        scene.add(mesh);
+      }
+    </script>
+  </body>
+</html>

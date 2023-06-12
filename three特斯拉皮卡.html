@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>three灯光阴影</title>
+  <meta name="description" content="Three.js 是一款运行在浏览器中的 3D 引擎，你可以用它在 web 中创建各种三维场景，包括了摄影机、光影、材质等各种对象。">
+  <meta name="keywords" content="3d,WebGL">
+  <script src="./build/gsap.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    .animation-menu {
+      position: absolute;
+      top: 0;
+      right: 0;
+      padding: 0;
+      margin: 0;
+    }
+    .animation-menu li {
+      background-color: #fff;
+      box-sizing: border-box;
+      padding: 5px 10px;
+      list-style: none;
+      font-size: 14px;
+      margin: 5px 0;
+      text-align: center;
+      cursor: pointer;
+      z-index: 9;
+    }
+    
+  </style>
+</head>
+
+<body>
+  <!-- 引入three.js -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./build/three.module.js"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from 'three'; // 引入主包
+    import Stats from './jsm/libs/stats.module.js'; // 引入性能监控
+    import { OrbitControls } from './jsm/controls/OrbitControls.js'; // 引入轨道控制器
+    import { DRACOLoader } from './jsm/loaders/DRACOLoader.js'; // 引入DRACOLoader加载器
+    import { GLTFLoader } from './jsm/loaders/GLTFLoader.js'; // 引入GLTFLoader加载器 JSON|二进制
+
+    import { GUI } from './jsm/libs/lil-gui.module.min.js'; // gui图形控制器
+
+    // 创建性能监控
+    const stats = new Stats();
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.top = '0px';
+    stats.domElement.style.left = '0px';
+    document.getElementsByTagName('body')[0].appendChild(stats.domElement);
+
+    // 创建场景
+    const scene =new THREE.Scene();
+    scene.fog = new THREE.Fog(new THREE.Color(0xf0f0f0), 10, 50); // 创建雾
+    scene.background = new THREE.Color(0xf0f0f0);
+
+    // 创建摄像机
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+    camera.position.set(0, 5, 10);
+    scene.add(camera);
+
+    // 添加环境光
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+
+    // 创建GUI图形管理工具
+    const gui = new GUI();
+
+    // 创建聚光灯
+    const spotLight01 = new THREE.SpotLight(0xffffff, 1, 0, Math.PI/12, 1);
+    spotLight01.position.set( -5, 2, -5 );
+    spotLight01.castShadow = true; // 开启投影
+    spotLight01.shadow.mapSize.width = 2048;
+    spotLight01.shadow.mapSize.height = 2048;
+    scene.add(spotLight01);
+    const pointLightHelper01 = new THREE.PointLightHelper(spotLight01, 1, 0x000000);
+    scene.add(pointLightHelper01);
+
+    const spotLight02 = new THREE.SpotLight(0xffffff, 1, 0, Math.PI/12, 1);
+    spotLight02.position.set( 0, 5, -5 );
+    spotLight02.castShadow = true; // 开启投影
+    spotLight02.shadow.mapSize.width = 2048;
+    spotLight02.shadow.mapSize.height = 2048;
+    scene.add(spotLight02);
+    const pointLightHelper02 = new THREE.PointLightHelper(spotLight02, 1, 0x000000);
+    scene.add(pointLightHelper02);
+
+    const spotLight03 = new THREE.SpotLight(0xffffff, 1, 0, Math.PI/12, 1);
+    spotLight03.position.set(5, 2, -5 );
+    spotLight03.castShadow = true; // 开启投影
+    spotLight03.shadow.mapSize.width = 2048;
+    spotLight03.shadow.mapSize.height = 2048;
+    scene.add(spotLight03);
+    const pointLightHelper03 = new THREE.PointLightHelper(spotLight03, 1, 0x000000);
+    scene.add(pointLightHelper03);
+
+    const spotLight04 = new THREE.SpotLight(0xffffff, 1, 0, Math.PI/18, 1);
+    spotLight04.position.set( -5, 5, 0 );
+    spotLight04.castShadow = true; // 开启投影
+    spotLight04.shadow.mapSize.width = 2048;
+    spotLight04.shadow.mapSize.height = 2048;
+    scene.add(spotLight04);
+    const pointLightHelper04 = new THREE.PointLightHelper(spotLight04, 1, 0x000000);
+    scene.add(pointLightHelper04);
+
+    const spotLight05 = new THREE.SpotLight(0xffffff, 1, 0, Math.PI/18, 1);
+    spotLight05.position.set( 0, 10, 0 );
+    spotLight05.castShadow = true; // 开启投影
+    spotLight05.shadow.mapSize.width = 2048;
+    spotLight05.shadow.mapSize.height = 2048;
+    scene.add(spotLight05);
+    const pointLightHelper05 = new THREE.PointLightHelper(spotLight05, 1, 0x000000);
+    scene.add(pointLightHelper05);
+
+    const spotLight06 = new THREE.SpotLight(0xffffff, 1, 0, Math.PI/18, 1);
+    spotLight06.position.set( 5, 5, 0 );
+    spotLight06.castShadow = true; // 开启投影
+    spotLight06.shadow.mapSize.width = 2048;
+    spotLight06.shadow.mapSize.height = 2048;
+    scene.add(spotLight06);
+    const pointLightHelper06 = new THREE.PointLightHelper(spotLight06, 1, 0x000000);
+    scene.add(pointLightHelper06);
+
+    const spotLight07 = new THREE.SpotLight(0xffffff, 1, 0, Math.PI/12, 1);
+    spotLight07.position.set( -5, 2, 10 );
+    spotLight07.castShadow = true; // 开启投影
+    spotLight07.shadow.mapSize.width = 2048;
+    spotLight07.shadow.mapSize.height = 2048;
+    scene.add(spotLight07);
+    const pointLightHelper07 = new THREE.PointLightHelper(spotLight07, 1, 0x000000);
+    scene.add(pointLightHelper07);
+
+    const spotLight08 = new THREE.SpotLight(0xffffff, 1, 0, Math.PI/12, 1);
+    spotLight08.position.set( 0, 5, 10 );
+    spotLight08.castShadow = true; // 开启投影
+    spotLight08.shadow.mapSize.width = 2048;
+    spotLight08.shadow.mapSize.height = 2048;
+    scene.add(spotLight08);
+    const pointLightHelper08 = new THREE.PointLightHelper(spotLight08, 1, 0x000000);
+    scene.add(pointLightHelper08);
+
+    const spotLight09 = new THREE.SpotLight(0xffffff, 1, 0, Math.PI/12, 1);
+    spotLight09.position.set( 5, 2, 10 );
+    spotLight09.castShadow = true; // 开启投影
+    spotLight09.shadow.mapSize.width = 2048;
+    spotLight09.shadow.mapSize.height = 2048;
+    scene.add(spotLight09);
+    const pointLightHelper09 = new THREE.PointLightHelper(spotLight09, 1, 0x000000);
+    scene.add(pointLightHelper09);
+
+    // 创建渲染器
+    const renderer = new THREE.WebGLRenderer({ antialias: true});
+    renderer.shadowMap.enabled = true; // 开启阴影
+    renderer.setPixelRatio(window.devicePixelRatio); // 设置像素比例
+    renderer.setSize(window.innerWidth, window.innerHeight); // 设置长宽
+    document.body.appendChild(renderer.domElement);
+
+    // 创建轨道控制器
+    const controls = new OrbitControls( camera, renderer.domElement );
+    controls.minDistance = 2; // 最小滚轴
+    controls.maxDistance = 200; // 最大滚轴
+
+    // 创建全局的加载管理器
+    const loadingManager = new THREE.LoadingManager();
+
+    // 创建纹理加载器
+    const texture = new THREE.TextureLoader(loadingManager);
+    const dracoLoader = new DRACOLoader(); // 创建加载器
+    dracoLoader.setDecoderPath('js/libs/draco/gltf/'); // 加载压缩文件
+
+    const loader = new GLTFLoader(loadingManager); // 创建加载器
+    loader.setDRACOLoader(dracoLoader); // 解压压缩文件
+
+    // 加载特斯拉文件
+    loader.load('./resource/carShow/Tesla-Cybertruck.glb', (gltf) => {
+      const model = gltf.scene; // 获取模型
+      model.position.set( 0, 0, 0 );
+      /* 打开阴影 */
+      model.children.forEach(itemOne => {
+        itemOne.castShadow = true;
+        itemOne.receiveShadow = true;
+        if (itemOne.type == 'Mesh') {
+          if ((itemOne.name == 'Plane') || (itemOne.name == 'Cube002')) {
+            /* 车身 */
+            carBodyMode.push(itemOne);
+            
+          } else if (itemOne.name == 'Cube005') {
+            /* 轮毂 */
+            hubMode = itemOne;
+          } else if (itemOne.name == 'Circle002') {
+            /* 轮胎 */
+            tireMode = itemOne;
+          }
+        } else if (itemOne.type == 'Group') {
+          itemOne.children.forEach(itemTow => {
+            if ((itemTow.name == 'Cube025') || (itemTow.name == 'Cube025_2') || (itemTow.name == 'Cube025_3') || (itemTow.name == 'Cube025_4') || (itemTow.name == 'Cube025_5')) {
+              /* 车身 */
+              carBodyMode.push(itemTow);
+            } else if ((itemTow.name == 'Cube025_1')) {
+              /* 玻璃 */
+              glassMode = itemTow;
+            }
+          })
+        }
+      })
+      // 车身材质
+      carBodyMode.forEach(item => {
+        item.material = carBody; // 覆盖原来的材质
+      });
+      glassMode.material = glass; // 玻璃材质
+      hubMode.material = hub; // 轮毂材质
+      tireMode.material = tire; // 轮胎材质
+
+      scene.add(model); // 添加模型
+      console.log(model.children)
+      info();
+    }, (res) => {
+      console.log('加载进度:', ((res.loaded / res.total) * 100).toFixed(2) + '%');
+    })
+
+    let carBodyMode = []; /* 车身模型 */
+    let glassMode; /* 玻璃模型 */
+    let hubMode; /* 轮毂模型 */
+    let tireMode; /* 轮胎模型 */
+
+    
+    // 车身材质
+    const carBody = new THREE.MeshPhysicalMaterial({
+      color: 0x00ff00,
+      metalness: 1, /* 反射率 */
+      roughness: 1, /* 粗糙度 */
+      clearcoat: .8, /* 清漆 */
+      clearcoatRoughness: 0, /* 漆的粗糙度 */
+    });
+    let materialColour = {
+      color: 0x00ff00
+    };
+    // let materialColour = 0x00ff00;
+    gui.addColor(materialColour, 'color').name('车身颜色').onChange( function ( value ) {
+      carBody.color.set( value );
+    } );
+
+    // 玻璃材质
+    const glass = new THREE.MeshPhysicalMaterial({
+      color: 0x333333,
+      metalness: 0.5, /* 反射率 */
+      roughness: 0.5, /* 粗糙度 */
+    });
+    
+
+    // 轮毂材质
+    const hub = new THREE.MeshPhysicalMaterial({
+      color: 0x555555,
+      metalness: 0.5, /* 反射率 */
+      roughness: 0.5, /* 粗糙度 */
+    });
+
+    // 轮胎材质
+    const tire = new THREE.MeshPhysicalMaterial({
+      color: 0x111111,
+      metalness: 0.3, /* 反射率 */
+      roughness: 1, /* 粗糙度 */
+    });
+    
+
+
+    // 初始化
+    function info () {
+      // 创建平面
+      const plane = new THREE.PlaneGeometry(100, 100);
+      const material = new THREE.MeshPhongMaterial({
+        fog: true, /* 被雾影响 */
+        color: 0xffffff,
+        shininess: 30, /* 高亮的程度 */
+      });
+      const planeMaterial = new THREE.Mesh(plane, material);
+      planeMaterial.rotation.x = -Math.PI * 0.5;
+      planeMaterial.receiveShadow = true; // 开启接收阴影
+      scene.add(planeMaterial);
+
+      // 创建辅助坐标
+      const axesHelper = new THREE.AxesHelper( 5 );
+      scene.add( axesHelper );
+
+      // 监听窗口
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      })
+
+      // 动画
+      function animation() {
+        controls.update(); // 控制器
+        stats.update(); // 刷新统计
+        renderer.render(scene, camera);
+        requestAnimationFrame(animation);
+      }
+      animation();
+    }
+    
+  </script>
+</body>
+</html>
