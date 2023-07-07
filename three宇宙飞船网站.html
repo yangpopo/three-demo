@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>three宇宙飞船网站</title>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
+    <script src="./build/gsap.min.js"></script>
+    <style>
+      @charset "utf-8";
+      /* CSS Document */
+      * {
+        color: #444;
+      }
+      body {
+        font: 12px/1.5 "微软雅黑", Arial, Tahoma, Helvetica, \5b8b\4f53,
+          sans-serif;
+        position: relative;
+        overflow: hidden;
+      }
+      html,
+      body,
+      div,
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      hr,
+      p,
+      blockquote,
+      dl,
+      dt,
+      dd,
+      ul,
+      ol,
+      li,
+      pre,
+      form,
+      fieldset,
+      object,
+      code,
+      em,
+      span,
+      var,
+      legend,
+      button,
+      input,
+      textarea,
+      th,
+      td,
+      a,
+      img,
+      header,
+      footer,
+      nav,
+      aside,
+      audio,
+      datalist,
+      section {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        outline: 0;
+      } /*清除内外边距*/
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        font-weight: normal;
+        font-size: 100%;
+      } /*设置默认字体*/
+      :focus {
+        outline: 0;
+      }
+      ul,
+      ol,
+      ul li,
+      ol li {
+        list-style: none;
+      } /*重置列表*/
+      address,
+      caption,
+      cite,
+      em,
+      code,
+      dfn,
+      th,
+      var {
+        font-style: normal;
+        font-weight: normal;
+      }
+      form label {
+        cursor: pointer;
+      }
+      input,
+      button,
+      select,
+      textarea {
+        font-family: inherit;
+        font-size: 100%;
+        outline: none;
+      }
+      textarea {
+        resize: none;
+      }
+      input {
+        vertical-align: middle;
+      }
+      img {
+        border: 0;
+      } /*重置图片元素*/
+      table {
+        border-collapse: collapse;
+        border-spacing: 0;
+      } /*重置表格*/
+      .l {
+        float: left;
+      }
+      .r {
+        float: right;
+      }
+      button,
+      input[type="reset"],
+      input[type="button"],
+      input[type="submit"] {
+        line-height: normal !important;
+      }
+      a {
+        text-decoration: none;
+      }
+      a {
+        color: #666;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      input {
+        _filter: chroma(color=#000000);
+      }
+
+      .page-box {
+        position: absolute;
+        top: 0;
+        width: 50%;
+      }
+      .page-box .page {
+        position: relative;
+        left: 20%;
+        height: 100vh;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .page-box .page .title {
+        font-size: 20px;
+        color: #fff;
+        margin-bottom: 10px;
+      }
+      .page-box .page .subtitle {
+        font-size: 14px;
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container"></div>
+    <div class="page-box">
+      <div class="page item-01" id="itemHead">
+        <h1 class="title">标题一</h1>
+        <p class="subtitle">副标题一</p>
+      </div>
+      <div class="page item-02">
+        <h1 class="title">标题二</h1>
+        <p class="subtitle">副标题二</p>
+      </div>
+      <div class="page item-03">
+        <h1 class="title">标题三</h1>
+        <p class="subtitle">副标题三</p>
+      </div>
+      <div class="page item-04">
+        <h1 class="title">标题四</h1>
+        <p class="subtitle">副标题四</p>
+      </div>
+    </div>
+
+    <!-- Import maps polyfill -->
+    <!-- Remove this when import maps will be widely supported -->
+    <script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js" ></script>
+
+    <script>
+      if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+      }
+    </script> 
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "../build/three.module.js"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import * as THREE from "three";
+      import Stats from './jsm/libs/stats.module.js'; // 引入性能监控
+      import { GUI } from "./jsm/libs/lil-gui.module.min.js";
+      import { OrbitControls } from "./jsm/controls/OrbitControls.js";
+      import { Water } from "./jsm/objects/Water2.js";
+      import { DRACOLoader } from "./jsm/loaders/DRACOLoader.js"; // 引入DRACOLoader加载器
+      import { GLTFLoader } from "./jsm/loaders/GLTFLoader.js"; // 引入GLTFLoader加载器 JSON|二进制
+
+      let scene, camera, controls, clock, renderer, water;
+      let boxMesh, capsuleMesh, coneMesh, octahedronMesh;
+      let page = 0;
+
+      
+      let gsapTimeline01 = gsap.timeline(); // 创建时间线动画
+
+      // 创建性能监控
+      const stats = new Stats();
+      stats.domElement.style.position = 'absolute';
+      stats.domElement.style.top = '0px';
+      stats.domElement.style.left = '0px';
+      document.getElementsByTagName('body')[0].appendChild(stats.domElement);
+      
+      
+
+      // const params = {
+      //   color: "#d6edff",
+      //   scale: 4,
+      //   flowX: 1,
+      //   flowY: 1,
+      // };
+
+
+      scene = new THREE.Scene();
+
+      // 创建加载管理器
+      const manager = new THREE.LoadingManager();
+      const texture = new THREE.TextureLoader(manager);
+      manager.onLoad = function () {
+        backgroundTexture.mapping = THREE.EquirectangularReflectionMapping;
+        // backgroundTexture.magFilter = THREE.NearestFilter;
+        scene.background = backgroundTexture; // 场景的背景图
+        scene.environment = backgroundTexture; // 全局环境纹理
+        console.log("加载完成!");
+        init(); /* 初始化 */
+      };
+      manager.onProgress = function (url, itemsLoaded, itemsTotal) {
+        console.log(
+          "加载进度: " + ((itemsLoaded / itemsTotal) * 100).toFixed(2) + "%"
+        );
+      };
+
+      const backgroundTexture = texture.load( './resource/starrySkyWeb/sive-bg.jpg' );
+
+
+      function init() {
+        // 创建物体材质
+        const currentMaterial = new THREE.MeshLambertMaterial( {color: 0xffffff} );
+        // 创建物体--立方体
+        const box = new THREE.BoxGeometry(1, 1, 1);
+        boxMesh = new THREE.Mesh(box, currentMaterial);
+        boxMesh.position.set(2.5, 0, 0);
+        scene.add(boxMesh);
+
+        // 创建物体--胶囊
+        const capsule = new THREE.CapsuleGeometry(0.8, 1.5, 15, 80); 
+        capsuleMesh = new THREE.Mesh(capsule, currentMaterial);
+        capsuleMesh.position.set(2.5, -8, 0);
+        capsuleMesh.rotation.set(Math.PI / 2, 0, 0);
+        scene.add(capsuleMesh);
+
+        // 创建物体--圆锥
+        const cone = new THREE.ConeGeometry( 1, 2, 80, 1);
+        const coneMesh = new THREE.Mesh(cone, currentMaterial);
+        coneMesh.position.set(2.5, -16, 0);
+        coneMesh.rotation.set(Math.PI / 2, 0, 0);
+		    scene.add(coneMesh);
+
+        // 创建物体--8面体
+        const octahedron = new THREE.OctahedronGeometry( 1, 0);
+        octahedronMesh = new THREE.Mesh(octahedron, currentMaterial);
+        octahedronMesh.position.set(2.5, -24, 0);
+		    scene.add(octahedronMesh);
+
+        window.addEventListener('mousemove', (event) => {
+          let x = 0, y = 0;
+          x = (event.clientX / (window.innerWidth * 1.8)) * 2 - 1;
+          y = (event.clientY / window.innerHeight) * 2 - 1;
+          let gsapTimeline00 = gsap.timeline(); // 创建时间线动画
+          // 立方体动画
+          gsap.to(boxMesh.rotation, {
+            duration: 3,
+            x: 1 * y,
+            y: 1 * x,
+            ease: "power3.out", // 运动状态
+          });
+          // 胶囊动画
+          gsap.to(capsuleMesh.rotation, {
+            duration: 3,
+            x: Math.PI / 2 + 1 * y,
+            z: -1 * x,
+            ease: "power3.out", // 运动状态
+          });
+          // 圆锥动画
+          gsap.to(coneMesh.rotation, {
+            duration: 3,
+            x: Math.PI / 2 + 1 * y,
+            z: -1 * x,
+            ease: "power3.out", // 运动状态
+          });
+
+          // 8面体动画
+          gsap.to(octahedronMesh.rotation, {
+            duration: 3,
+            x: 1 * y,
+            y: 1 * x,
+            ease: "power3.out", // 运动状态
+          });
+        })
+
+        window.addEventListener('wheel', (event) => {
+          if (!gsapTimeline01.isActive()) {
+            if (event.wheelDelta > 0) {
+              // 向上滚动
+              page--
+              if (page <= 0) {
+                page = 0;
+              }
+            } else {
+              // 向下滚动
+              page++
+              if (page > 3) {
+                page = 3;
+              }
+            }
+            gsapTimeline01.to(camera.position, {
+              duration: 1,
+              y: -8 * page,
+              ease: "power3.out", // 运动状态
+              repeat: 0, 
+            })
+            gsap.to('#itemHead', {
+              duration: 1,
+              marginTop: (-100 * page) + 'vh',
+              ease: "power3.out", // 运动状态
+              repeat: 0, 
+            })
+          }
+        })
+        
+        // 创建星球
+        const allStar0 = new THREE.InstancedMesh(
+          new THREE.SphereGeometry(.35, 15, 15),
+          currentMaterial,
+          400 /* 创建数量 */
+        );
+        for (let i = 0; i < 200; i++) {
+          let x = Math.random()* 200 - 100;
+          let y = Math.random()* 200 - 100;
+          let z = Math.random()* 200 - 100;
+          let scale = Math.random()* 1.5 - 1; // 缩放比例
+          /* 创建矩阵 */
+          let matrix = new THREE.Matrix4();
+          matrix.setPosition(x, y, z);
+          let vector = new THREE.Vector3( scale, scale, scale );
+          matrix.scale(vector);
+          allStar0.setMatrixAt(i, matrix);
+        }
+        scene.add(allStar0);
+        
+        gsap.to(allStar0.position, {
+          duration: 5,
+          z: -200,
+          ease: "none", // 运动状态
+          repeat: -1, 
+        });
+
+        const allStar1 = new THREE.InstancedMesh(
+          new THREE.SphereGeometry(.35, 15, 15),
+          currentMaterial,
+          400 /* 创建数量 */
+        );
+        allStar1.position.set(0, 0, 50);
+        for (let i = 0; i < 200; i++) {
+          let x = Math.random()* 200 - 100;
+          let y = Math.random()* 200 - 100;
+          let z = Math.random()* 200 - 100;
+          let scale = Math.random()* 1.5 - 1; // 缩放比例
+          /* 创建矩阵 */
+          let matrix = new THREE.Matrix4();
+          matrix.setPosition(x, y, z);
+          let vector = new THREE.Vector3( scale, scale, scale );
+          matrix.scale(vector);
+          allStar1.setMatrixAt(i, matrix);
+        }
+        scene.add(allStar1);
+        
+        gsap.to(allStar1.position, {
+          duration: 7.5,
+          z: -200,
+          ease: "none", // 运动状态
+          repeat: -1, 
+        });
+
+
+        
+
+
+
+        // 创建摄像头
+        camera = new THREE.PerspectiveCamera(
+          45,
+          window.innerWidth / window.innerHeight,
+          1,
+          1000
+        );
+        camera.position.set(0, 0, 10); /* 摄像头位置 */
+        camera.lookAt(scene.position); /* 摄像头看的位置 */
+
+        // 创建时间对象
+        clock = new THREE.Clock();
+        /* 环境光 */
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+        scene.add(ambientLight);
+
+        /* 平行光 */
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        directionalLight.position.set(-1, 2, 5);
+        scene.add(directionalLight);
+
+        // 渲染器
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.outputEncoding = THREE.sRGBEncoding; // 设置颜色模式
+        document.body.appendChild(renderer.domElement);
+
+        // gui
+        // const gui = new GUI();
+        // gui.addColor(params, "color").onChange(function (value) {
+        //   water.material.uniforms["color"].value.set(value);
+        // });
+        // gui.add(params, "scale", 1, 10).onChange(function (value) {
+        //   water.material.uniforms["config"].value.w = value;
+        // });
+        // gui
+        //   .add(params, "flowX", -1, 1)
+        //   .step(0.01)
+        //   .onChange(function (value) {
+        //     water.material.uniforms["flowDirection"].value.x = value;
+        //     water.material.uniforms["flowDirection"].value.normalize();
+        //   });
+        // gui
+        //   .add(params, "flowY", -1, 1)
+        //   .step(0.01)
+        //   .onChange(function (value) {
+        //     water.material.uniforms["flowDirection"].value.y = value;
+        //     water.material.uniforms["flowDirection"].value.normalize();
+        //   });
+        // gui.open();
+
+        /* 控制器 */
+        // controls = new OrbitControls(camera, renderer.domElement);
+        // controls.minDistance = 0;
+        // controls.maxDistance = 500;
+
+        window.addEventListener("resize", onWindowResize);
+        animate();
+      }
+
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      function animate() {
+        // controls.update(); // 控制器
+        stats.update(); // 刷新统计
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+      }
+    </script>
+  </body>
+</html>
