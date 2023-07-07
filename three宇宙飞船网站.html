@@ -411,20 +411,11 @@
           repeat: -1, 
         });
 
-
-        
-
-
-
         // 创建摄像头
-        camera = new THREE.PerspectiveCamera(
-          45,
-          window.innerWidth / window.innerHeight,
-          1,
-          1000
-        );
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
         camera.position.set(0, 0, 10); /* 摄像头位置 */
         camera.lookAt(scene.position); /* 摄像头看的位置 */
+        scene.add(camera);
 
         // 创建时间对象
         clock = new THREE.Clock();
@@ -444,29 +435,6 @@
         renderer.outputEncoding = THREE.sRGBEncoding; // 设置颜色模式
         document.body.appendChild(renderer.domElement);
 
-        // gui
-        // const gui = new GUI();
-        // gui.addColor(params, "color").onChange(function (value) {
-        //   water.material.uniforms["color"].value.set(value);
-        // });
-        // gui.add(params, "scale", 1, 10).onChange(function (value) {
-        //   water.material.uniforms["config"].value.w = value;
-        // });
-        // gui
-        //   .add(params, "flowX", -1, 1)
-        //   .step(0.01)
-        //   .onChange(function (value) {
-        //     water.material.uniforms["flowDirection"].value.x = value;
-        //     water.material.uniforms["flowDirection"].value.normalize();
-        //   });
-        // gui
-        //   .add(params, "flowY", -1, 1)
-        //   .step(0.01)
-        //   .onChange(function (value) {
-        //     water.material.uniforms["flowDirection"].value.y = value;
-        //     water.material.uniforms["flowDirection"].value.normalize();
-        //   });
-        // gui.open();
 
         /* 控制器 */
         // controls = new OrbitControls(camera, renderer.domElement);
