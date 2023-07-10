@@ -178,7 +178,7 @@
   
       // 添加平行光
       const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
-      directionalLight.position.set(0, 12, 15);
+      directionalLight.position.set(0, 12, 12);
       directionalLight.castShadow = true; // 开启灯光阴影
       // 灯光阴影的属性
       directionalLight.shadow.radius = 10; // 阴影的模糊
@@ -227,19 +227,17 @@
           map: earthTexture
         });
         const earthMesh = new THREE.Mesh(earth, earthMaterial);
-        // scene.add(earthMesh);
+        scene.add(earthMesh);
 
         // 创建地球-发光
-        const earthShine = new THREE.SphereGeometry(1.2, 45, 45);
+        const earthShine = new THREE.SphereGeometry(1.025, 45, 45);
         const earthShineMaterial = new THREE.MeshLambertMaterial({
           map: earthShineTexture,
           alphaMap: earthShineTexture,
           transparent: true,
-          opacity:0.7,
         });
         const earthShineMesh = new THREE.Mesh(earthShine, earthShineMaterial);
-        // earthMesh.add(earthShineMesh)
-        scene.add(earthShineMesh);
+        earthMesh.add(earthShineMesh)
 
        
   
