@@ -163,13 +163,16 @@
       stats.domElement.style.top = '0px';
       stats.domElement.style.left = '0px';
       document.getElementsByTagName('body')[0].appendChild(stats.domElement);
+
+      // 演员
+      let earthMesh, earthShineMesh, earthGlowMesh, earthInnerGlowMesh;
   
       // 创建场景
       const scene =new THREE.Scene();
       scene.background = new THREE.Color(0x050511);
   
       // 创建摄像机
-      const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+      const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 1, 1000);
       camera.position.set(0, 5, 10);
       scene.add(camera);
   
@@ -215,37 +218,206 @@
 
       // 创建纹理加载器
       const loader = new THREE.TextureLoader(manager);
-      const earthTexture = loader.load('./resource/earthMoon/map.jpg');
-      const earthShineTexture = loader.load('./resource/earthMoon/earth.jpg');
+      const earthTexture = loader.load('./resource/earthMoon/map.jpg'); // 地球基础贴图
+      const earthShineTexture = loader.load('./resource/earthMoon/earth.jpg'); // 地球发光贴图
+      const earthGlowTexture = loader.load('./resource/earthMoon/glow.png'); // 地球外发光
+      const earthInnerGlowTexture = loader.load('./resource/earthMoon/innerGlow.png'); // 地球内发光
+      const moonTexture = loader.load('./resource/earthMoon/moon.jpg'); // 地球内发光
+      const lightTexture = loader.load('./resource/earthMoon/light_column.png'); // 光柱
+      const circleTexture = loader.load('./resource/earthMoon/aperture.png'); // 水波纹
+      
   
+      const lon2xyz = (R, longitude, latitude) => {
+        let lon = (longitude * Math.PI) / 180; // 转弧度值
+        const lat = (latitude * Math.PI) / 180; // 转弧度值
+        lon = -lon; // js坐标系z坐标轴对应经度-90度，而不是90度
+
+        // 经纬度坐标转球面坐标计算公式
+        const x = R * Math.cos(lat) * Math.cos(lon);
+        const y = R * Math.sin(lat);
+        const z = R * Math.cos(lat) * Math.sin(lon);
+        // 返回球面坐标
+        return new THREE.Vector3(x, y, z);
+      };
       
       // 初始化
       function info () {
+        // 创建背景星星
+        const allStar = new THREE.InstancedMesh(
+          new THREE.SphereGeometry(0.1, 5, 5),
+          new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            emissive: 0xffffff, /* 自发光 */
+            emissiveIntensity: 1, /* 自发光强度 */
+          }),
+          200 /* 创建数量 */
+        );
+        let starInitPosition = []; // 星星初始位置
+        for (let i = 0; i < 200; i++) {
+          let x = Math.random()* 200 - 100;
+          let y = Math.random()* 200 - 100;
+          let z = Math.random()* 200 - 100;
+          starInitPosition.push(new THREE.Vector3(x, y, z));
+          /* 创建矩阵 */
+          let matrix = new THREE.Matrix4();
+          matrix.setPosition(x, y, z);
+          allStar.setMatrixAt(i, matrix);
+        }
+        scene.add(allStar);
+
+
         // 创建地球-基础
         const earth = new THREE.SphereGeometry(1, 45, 45);
         const earthMaterial = new THREE.MeshLambertMaterial({
           map: earthTexture
         });
-        const earthMesh = new THREE.Mesh(earth, earthMaterial);
+        earthMesh = new THREE.Mesh(earth, earthMaterial);
         scene.add(earthMesh);
 
         // 创建地球-发光
-        const earthShine = new THREE.SphereGeometry(1.025, 45, 45);
+        const earthShine = new THREE.SphereGeometry(1.03, 45, 45);
         const earthShineMaterial = new THREE.MeshLambertMaterial({
           map: earthShineTexture,
           alphaMap: earthShineTexture,
           transparent: true,
+          emissiveMap: earthShineTexture,
+          emissive: 0xffffff,
         });
-        const earthShineMesh = new THREE.Mesh(earthShine, earthShineMaterial);
+        earthShineMesh = new THREE.Mesh(earthShine, earthShineMaterial);
         earthMesh.add(earthShineMesh)
 
-       
-  
+        // 地球旋转
+        const earthGsap = gsap.timeline();
+        earthGsap.to(earthMesh.rotation, {
+          duration: 10,
+          repeat: -1,
+          y: Math.PI * 2,
+          ease: "none", // 运动状态
+        })
+
+        // 创建地球-外发光
+        const earthGlowMaterial = new THREE.SpriteMaterial({ 
+          map: earthGlowTexture,
+          alphaMap: earthGlowTexture,
+          transparent: true,
+          color: 0x4d76cf,
+          depthWrite: false,
+          depthTest: false, // 是否启用深度测试
+          blending: THREE.AdditiveBlending, // 材质混合模式-发光
+        });
+        earthGlowMesh = new THREE.Sprite(earthGlowMaterial);
+        earthGlowMesh.scale.set(3.05, 3.05, 1)
+        earthMesh.add(earthGlowMesh);
+
+        // 创建地球-内发光
+        const earthInnerGlowMaterial = new THREE.SpriteMaterial({ 
+          map: earthInnerGlowTexture,
+          alphaMap: earthInnerGlowTexture,
+          transparent: true,
+          color: 0x4d76cf,
+          depthWrite: false,
+          depthTest: false, // 是否启用深度测试
+          blending: THREE.AdditiveBlending, // 材质混合模式-发光
+        });
+        earthInnerGlowMesh = new THREE.Sprite(earthInnerGlowMaterial);
+        earthInnerGlowMesh.scale.set(2.5, 2.5, 1)
+        scene.add(earthInnerGlowMesh);
+
+        // 创建月球
+        const moon = new THREE.SphereGeometry(.15, 45, 45);
+        const moonMaterial = new THREE.MeshLambertMaterial({
+          map: moonTexture
+        });
+        const moonMesh = new THREE.Mesh(moon, moonMaterial);
+        moonMesh.position.set(3.5, 0, 0);
+        scene.add(moonMesh);
+
+        // 月球旋转
+        const moonGsap = gsap.timeline();
+        let  moonTime = {
+          value: 0,
+        };
+        moonGsap.to(moonTime, {
+          value: 1,
+          duration: 10,
+          repeat: -1,
+          ease: "linear",
+          onUpdate: () => {
+            moonMesh.position.x = 3.5 * Math.cos(moonTime.value * Math.PI * 2);
+            moonMesh.position.z = 3.5 * Math.sin(moonTime.value * Math.PI * 2);
+            moonMesh.rotation.y = moonTime.value * Math.PI * 8;
+          },
+        })
+
+        for (let i = 0; i < 50; i++) {
+          // 创建光柱 lightTexture
+          const lightPillar = new THREE.PlaneGeometry(0.3, 0.6);
+          const lightPillarMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            map: lightTexture,
+            alphaMap: lightTexture,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+          });
+          const lightPillarMesh = new THREE.Mesh(lightPillar, lightPillarMaterial);
+          lightPillarMesh.add(lightPillarMesh.clone().rotateY(Math.PI / 2)); // 复制一份在旋转
+
+          const lightGsap = gsap.timeline();
+          lightGsap.to(lightPillarMesh.scale, {
+            duration: 1 + Math.random() * 0.5,
+            y: 2,
+            repeat: -1,
+            delay: Math.random() * 0.5,
+            yoyo: true,
+            ease: "power2.inOut",
+          })
+
+          // 创建水波
+          let circlePlane = new THREE.PlaneGeometry(0.25, 0.25);
+          let circlePlaneMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            map: circleTexture,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+          });
+          let circlePlaneMesh = new THREE.Mesh(circlePlane, circlePlaneMaterial);
+          circlePlaneMesh.rotation.x = -Math.PI / 2;
+          circlePlaneMesh.position.set(0, -0.2, 0);
+          lightPillarMesh.add(circlePlaneMesh);
+          const circleGsap = gsap.timeline();
+          circleGsap.to(circlePlaneMesh.scale, {
+            duration: 1 + Math.random() * 0.5,
+            x: 2,
+            y: 2,
+            z: 2,
+            repeat: -1,
+            delay: Math.random() * 0.5,
+            yoyo: true,
+            ease: "power2.inOut",
+          })
+
+          // 设置光柱的位置
+          let lat = Math.random() * 180 - 90;
+          let lon = Math.random() * 360 - 180;
+          let position = lon2xyz(1.25, lon, lat); // 1是地球半径
+          lightPillarMesh.position.set(position.x, position.y, position.z); // 设置光柱位置
+          // 设置光柱旋转
+          lightPillarMesh.quaternion.setFromUnitVectors(
+            new THREE.Vector3(0, 1, 0),
+            position.clone().normalize()
+          );
+
+          earthMesh.add(lightPillarMesh);
+        }
         
   
         // 创建辅助坐标
         const axesHelper = new THREE.AxesHelper( 5 );
-        scene.add( axesHelper );
+        scene.add(axesHelper);
   
         // 监听窗口
         window.addEventListener('resize', () => {
