@@ -13,23 +13,9 @@
       margin: 0;
       padding: 0;
     }
-    .animation-menu {
-      position: absolute;
-      top: 0;
-      right: 0;
-      padding: 0;
-      margin: 0;
-    }
-    .animation-menu li {
-      background-color: #fff;
-      box-sizing: border-box;
-      padding: 5px 10px;
-      list-style: none;
-      font-size: 14px;
-      margin: 5px 0;
-      text-align: center;
-      cursor: pointer;
-      z-index: 9;
+    .label {
+      font-size: 12px;
+      color: #fff;
     }
     
   </style>
@@ -49,6 +35,8 @@
     import Stats from './jsm/libs/stats.module.js'; // 引入性能监控
     import { OrbitControls } from './jsm/controls/OrbitControls.js'; // 引入轨道控制器
     import { GUI } from './jsm/libs/lil-gui.module.min.js'; // gui图形控制器
+
+    import { CSS2DRenderer, CSS2DObject } from './jsm/renderers/CSS2DRenderer.js';
 
     // 创建性能监控
     const stats = new Stats();
@@ -71,8 +59,6 @@
     // 添加环境光
     scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-    // 创建GUI图形管理工具
-    const gui = new GUI();
 
     // 添加平行光
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -84,13 +70,6 @@
     // 阴影--灯光的相机设置
     directionalLight.shadow.camera.near = 0.5; // 近端
     directionalLight.shadow.camera.far = 100; // 远端
-    // const directionalLightHelper = new THREE.DirectionalLightHelper( directionalLight, 5 );
-    // scene.add(directionalLightHelper);
-    gui.add(directionalLight.shadow.camera, 'far', 0, 50)
-    .name('阴影远端')
-    .onChange(() => {
-      directionalLight.shadow.camera.updateProjectionMatrix();
-    });
     scene.add(directionalLight);
 
     // 创建渲染器
@@ -100,8 +79,15 @@
     renderer.setSize(window.innerWidth, window.innerHeight); // 设置长宽
     document.body.appendChild(renderer.domElement);
 
+    // 2D渲染器
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0px';
+    document.body.appendChild(labelRenderer.domElement);
+
     // 创建轨道控制器
-    const controls = new OrbitControls(camera, renderer.domElement);
+    const controls = new OrbitControls(camera, labelRenderer.domElement);
     controls.minDistance = 1; // 最小滚轴
     controls.maxDistance = 200; // 最大滚轴
 
@@ -144,6 +130,16 @@
       earthMesh.receiveShadow = true; // 接收阴影
       scene.add(earthMesh);
 
+      // 创建地球标签
+      const earthDiv = document.createElement('div');
+      earthDiv.className = 'label';
+      earthDiv.textContent = '地球';
+      earthDiv.style.backgroundColor = 'transparent';
+      const earthLabel = new CSS2DObject( earthDiv );
+      earthLabel.position.set(0, 1.1, 0);
+      earthMesh.add(earthLabel);
+      earthLabel.layers.set(0);
+
       const earthGsap = gsap.timeline(); // 创建地球动画时间线
       earthGsap.to(earthMesh.rotation, {
         duration: 30,
@@ -184,6 +180,17 @@
       moonMesh.castShadow = true; // 开启阴影
       moonMesh.receiveShadow = true; // 关闭接收阴影
       scene.add(moonMesh);
+
+      const moonDiv = document.createElement('div');
+      moonDiv.className = 'label';
+      moonDiv.textContent = '月球';
+      moonDiv.style.backgroundColor = 'transparent';
+
+      const moonLabel = new CSS2DObject(moonDiv);
+      moonLabel.position.set(0, 0.3, 0);
+      moonMesh.add(moonLabel);
+      moonLabel.layers.set(0);
+
       let moonGsapOption = {
         value: 0
       };
@@ -210,6 +217,7 @@
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
       })
 
       // 动画
@@ -217,6 +225,7 @@
         controls.update(); // 控制器
         stats.update(); // 刷新统计
         renderer.render(scene, camera);
+        labelRenderer.render(scene, camera);
         requestAnimationFrame(animation);
       }
       animation();
