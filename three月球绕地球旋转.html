@@ -57,12 +57,15 @@
     stats.domElement.style.left = '0px';
     document.getElementsByTagName('body')[0].appendChild(stats.domElement);
 
+    // 演员
+    let earthMesh, earthCloudMesh;
+
     // 创建场景
     const scene =new THREE.Scene();
 
     // 创建摄像机
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-    camera.position.set(0, 5, 10);
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 5, 12);
     scene.add(camera);
 
     // 添加环境光
@@ -72,15 +75,17 @@
     const gui = new GUI();
 
     // 添加平行光
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
-    directionalLight.position.set(0, 12, 15);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(0, 5, 15);
     directionalLight.castShadow = true; // 开启灯光阴影
     // 灯光阴影的属性
-    directionalLight.shadow.radius = 10; // 阴影的模糊
+    directionalLight.shadow.radius = 20; // 阴影的模糊
     directionalLight.shadow.mapSize.set(2048, 2048); // 阴影贴图尺寸大小
     // 阴影--灯光的相机设置
     directionalLight.shadow.camera.near = 0.5; // 近端
-    directionalLight.shadow.camera.far = 50; // 远端
+    directionalLight.shadow.camera.far = 100; // 远端
+    // const directionalLightHelper = new THREE.DirectionalLightHelper( directionalLight, 5 );
+    // scene.add(directionalLightHelper);
     gui.add(directionalLight.shadow.camera, 'far', 0, 50)
     .name('阴影远端')
     .onChange(() => {
@@ -89,38 +94,116 @@
     scene.add(directionalLight);
 
     // 创建渲染器
-    const renderer = new THREE.WebGLRenderer({ antialias: true});
+    const renderer = new THREE.WebGLRenderer({antialias: true});
     renderer.shadowMap.enabled = true; // 开启阴影
     renderer.setPixelRatio(window.devicePixelRatio); // 设置像素比例
     renderer.setSize(window.innerWidth, window.innerHeight); // 设置长宽
     document.body.appendChild(renderer.domElement);
 
     // 创建轨道控制器
-    const controls = new OrbitControls( camera, renderer.domElement );
-    controls.minDistance = 5; // 最小滚轴
-    controls.maxDistance = 100; // 最大滚轴
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.minDistance = 1; // 最小滚轴
+    controls.maxDistance = 200; // 最大滚轴
 
-    
+    // 创建加载管理器
+    const manager = new THREE.LoadingManager();
+    manager.onStart = function ( url, itemsLoaded, itemsTotal ) {
+      console.log('加载进度: '+ itemsLoaded + ' / ' + itemsTotal);
+    };
 
-    info()
+    manager.onLoad = function ( ) {
+      console.log('加载完成');
+      envTexture.mapping = THREE.EquirectangularReflectionMapping;
+      scene.background = envTexture;
+      info()
+    };
+
+    // 创建纹理加载器
+    const loader = new THREE.TextureLoader(manager);
+    const envTexture = loader.load('./resource/realMoonEarth/starts.jpg'); // 星空环境贴图
+    const earthTexture = loader.load('./resource/realMoonEarth/earth_atmos_4096.jpg'); // 地球基础贴图
+    const earthNormalTexture = loader.load('./resource/realMoonEarth/earth_normal_2048.jpg'); // 地球法线基础贴图
+    const earthCloudTexture = loader.load('./resource/realMoonEarth/earth_clouds_1024.png'); // 地球大气贴图
+
+    const moonTexture = loader.load('./resource/realMoonEarth/moon_1024.jpg'); // 地球基础贴图
+    const moonNormalTexture = loader.load('./resource/realMoonEarth/moon_1024_normal.png'); // 地球法线基础贴图
+
     // 初始化
     function info () {
-      // 创建几何体
+      // 创建地球
       const earthGeometry = new THREE.SphereGeometry(1, 100, 100);
       const earthMaterial = new THREE.MeshStandardMaterial({
-        roughness: 1, // 粗糙度
-        metalness: 0.1, // 金属化
+        map: earthTexture,
+        normalMap: earthNormalTexture,
+        roughness: 0.5, // 粗糙
+        metalness: 0.2, // 金属
       });
-      const earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
+      earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
       earthMesh.position.set(0, 0, 0);
       earthMesh.castShadow = true; // 开启阴影
-      earthMesh.receiveShadow = false; // 关闭接收阴影
+      earthMesh.receiveShadow = true; // 接收阴影
       scene.add(earthMesh);
+
+      const earthGsap = gsap.timeline(); // 创建地球动画时间线
+      earthGsap.to(earthMesh.rotation, {
+        duration: 30,
+        repeat: -1,
+        y: Math.PI * 2,
+        ease: "none", // 运动状态
+      })
+
+      // 创建地球大气
+      const earthCloudGeometry = new THREE.SphereGeometry(1.05, 100, 100);
+      const earthCloudMaterial = new THREE.MeshStandardMaterial({
+        map: earthCloudTexture,
+        transparent: true, // 开启透明
+        alphaMap: earthCloudTexture,
+      });
+      const earthCloudMesh = new THREE.Mesh(earthCloudGeometry, earthCloudMaterial);
+      earthCloudMesh.position.set(0, 0, 0);
+      earthCloudMesh.castShadow = true; // 开启阴影
+      earthCloudMesh.receiveShadow = true; // 关闭接收阴影
+      scene.add(earthCloudMesh);
+
+      const earthCloudGsap = gsap.timeline(); // 创建地球动画时间线
+      earthCloudGsap.to(earthCloudMesh.rotation, {
+        duration: 40,
+        repeat: -1,
+        y: Math.PI * 2,
+        ease: "none", // 运动状态
+      })
+
+      // 创建月球
+      const moonGeometry = new THREE.SphereGeometry(0.25, 100, 100);
+      const moonMaterial = new THREE.MeshStandardMaterial({
+        map: moonTexture,
+        normalMap: moonNormalTexture,
+      });
+      const moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
+      moonMesh.position.set(4, 0, 0);
+      moonMesh.castShadow = true; // 开启阴影
+      moonMesh.receiveShadow = true; // 关闭接收阴影
+      scene.add(moonMesh);
+      let moonGsapOption = {
+        value: 0
+      };
+      const moonGsap = gsap.timeline(); // 创建地球动画时间线
+      moonGsap.to(moonGsapOption, {
+        duration: 4,
+        value:1,
+        repeat: -1,
+        ease: "none", // 运动状态
+        onUpdate: function() {
+          moonMesh.position.x = 4 * Math.cos(moonGsapOption.value * Math.PI * 2);
+          moonMesh.position.z = 4 * Math.sin(moonGsapOption.value * Math.PI * 2);
+          moonMesh.rotation.y = Math.PI * 2 * moonGsapOption.value;
+        }
+      })
 
 
       // 创建辅助坐标
-      const axesHelper = new THREE.AxesHelper( 5 );
-      scene.add( axesHelper );
+      const axesHelper = new THREE.AxesHelper(5);
+      scene.add(axesHelper);
 
       // 监听窗口
       window.addEventListener('resize', () => {
