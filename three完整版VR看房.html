@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+  <head>
+		<meta charset="utf-8">
+  	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+  	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  	<title>three完整版VR看房</title>
+  	<meta name="description" content="Three.js 是一款运行在浏览器中的 3D 引擎，你可以用它在 web 中创建各种三维场景，包括了摄影机、光影、材质等各种对象。">
+  	<meta name="keywords" content="3d,WebGL">
+  	<script src="./build/gsap.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./build/three.module.js"
+        }
+      }
+    </script>
+    <script type="module">
+      import * as THREE from "three";
+			import Stats from './jsm/libs/stats.module.js'; // 引入性能监控
+      import { OrbitControls } from "./jsm/controls/OrbitControls.js";
+      import { GLTFLoader } from "./jsm/loaders/GLTFLoader.js";
+			// import { FontLoader } from './jsm/loaders/FontLoader.js';
+
+			// 创建性能监控
+			const stats = new Stats();
+			stats.domElement.style.position = 'absolute';
+			stats.domElement.style.top = '0px';
+			stats.domElement.style.left = '0px';
+			document.getElementsByTagName('body')[0].appendChild(stats.domElement);
+
+      let scene, camera, renderer, controls;
+
+      // 创建加载管理器
+			const manager = new THREE.LoadingManager();
+			// 加载完成
+			manager.onLoad = function ( ) {
+				init();
+				console.log( '加载完成!');
+			};
+			// 加载进度
+			manager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
+				console.log( '加载进度: ' + (itemsLoaded / itemsTotal * 100).toFixed(2) );
+			};
+
+			// 创建纹理加载器
+			const texture = new THREE.TextureLoader(manager);
+			// 光环
+			const haloMap = texture.load('./resource/whole-VR-showings/aperture.png');
+			const lightBeamMap = texture.load('./resource/whole-VR-showings/light_column.png');
+			// 客厅纹理
+			const parlorRightMap = texture.load('./resource/whole-VR-showings/0_r.jpg'); // 右
+			const parlorLeftMap = texture.load('./resource/whole-VR-showings/0_l.jpg'); // 左
+			const parlorTopMap = texture.load('./resource/whole-VR-showings/0_u.jpg'); // 顶部
+			const parlorBottomMap = texture.load('./resource/whole-VR-showings/0_d.jpg'); // 底部
+			const parlorPositiveMap = texture.load('./resource/whole-VR-showings/0_f.jpg'); // 正面
+			const parlorVersoMap = texture.load('./resource/whole-VR-showings/0_b.jpg'); // 背面
+
+			// 厨房纹理
+			const kitchenRightMap = texture.load('./resource/whole-VR-showings/3_r.jpg'); // 右
+			const kitchenLeftMap = texture.load('./resource/whole-VR-showings/3_l.jpg'); // 左
+			const kitchenTopMap = texture.load('./resource/whole-VR-showings/3_u.jpg'); // 顶部
+			const kitchenBottomMap = texture.load('./resource/whole-VR-showings/3_d.jpg'); // 底部
+			const kitchenPositiveMap = texture.load('./resource/whole-VR-showings/3_f.jpg'); // 正面
+			const kitchenVersoMap = texture.load('./resource/whole-VR-showings/3_b.jpg'); // 背面
+
+
+      function init() {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(
+          45,
+          window.innerWidth / window.innerHeight,
+          0.2,
+          2
+        );
+        renderer = new THREE.WebGLRenderer();
+        camera.position.set(0, 0, 0.1);
+        camera.lookAt(scene.position); // 摄像机对准对象
+
+        // 添加坐标系到场景中
+        const axes = new THREE.AxesHelper(1);
+        scene.add(axes);
+
+				// 房间盒子
+				const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+				const boxMaterial = [
+					new THREE.MeshBasicMaterial({map: parlorRightMap}),
+					new THREE.MeshBasicMaterial({map: parlorLeftMap}),
+					new THREE.MeshBasicMaterial({map: parlorTopMap}),
+					new THREE.MeshBasicMaterial({map: parlorBottomMap}),
+					new THREE.MeshBasicMaterial({map: parlorPositiveMap}),
+					new THREE.MeshBasicMaterial({map: parlorVersoMap}),
+				];
+				const boxMesh = new THREE.Mesh(boxGeometry, boxMaterial);
+				boxMesh.geometry.scale(1, 1, -1);
+				boxMesh.position.set(0, 0, 0);
+				scene.add(boxMesh);
+
+				// 创建标签
+				// 光圈
+				const haloGeometry = new THREE.PlaneGeometry(.08, .08);
+				const haloMaterial = new THREE.MeshBasicMaterial({
+					color: 0xffffff,
+					alphaMap: haloMap,
+					transparent: true,
+					map: haloMap,
+					blending: THREE.AdditiveBlending,
+					side: THREE.DoubleSide,
+				});
+				const haloMesh = new THREE.Mesh( haloGeometry, haloMaterial );
+				haloMesh.rotation.set(-Math.PI / 2, 0, 0);
+				// scene.add(haloMesh);
+
+				// 光圈动画
+				let haloGsap = gsap.timeline();
+				
+				// 光柱
+				const lightBeamGeometry = new THREE.PlaneGeometry(0.1, 0.1);
+				const lightBeamMaterial = new THREE.MeshBasicMaterial({
+					// color: 0xffffff,
+					alphaMap: lightBeamMap,
+					transparent: true,
+					map: lightBeamMap,
+					blending: THREE.AdditiveBlending,
+					side: THREE.DoubleSide,
+					depthWrite: false,
+				});
+				const lightBeamMesh = new THREE.Mesh(lightBeamGeometry, lightBeamMaterial);
+				lightBeamMesh.add(lightBeamMesh.clone().rotateY(Math.PI / 2))
+				lightBeamMesh.position.set(0, .05, 0);
+
+				// 创建组对象
+				const labelLightGroup = new THREE.Group();
+				labelLightGroup.add(haloMesh);
+				labelLightGroup.add(lightBeamMesh);
+
+				// 厨房标签
+				let galleyLabel = labelLightGroup.clone();
+				haloGsap.to(galleyLabel.children[0].scale, {
+					duration: 1,
+					x: 1.5,
+      		y: 1.5,
+					repeat: -1,
+					yoyo: true,
+				})
+				galleyLabel.position.set(0.15, 0.2, 0.4);
+				scene.add(galleyLabel);
+				
+
+
+
+
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 控制器
+        controls = new OrbitControls(camera, renderer.domElement);
+				controls.enablePan = false;
+				controls.maxPolarAngle = Math.PI - Math.PI / 3 // 垂直旋转角度限制
+				controls.minPolarAngle = Math.PI / 3;
+				controls.maxDistance = 0.35;
+
+				// 监听窗口
+				window.addEventListener('resize', () => {
+					camera.aspect = window.innerWidth / window.innerHeight;
+					camera.updateProjectionMatrix();
+					renderer.setSize(window.innerWidth, window.innerHeight);
+				})
+
+				function animate() {
+					controls.update(); // 控制器
+					stats.update(); // 刷新统计
+					renderer.render(scene, camera);
+					requestAnimationFrame(animate);
+				}
+
+				animate();
+      }
+      
+    </script>
+  </body>
+</html>

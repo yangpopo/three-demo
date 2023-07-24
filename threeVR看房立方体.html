@@ -84,7 +84,7 @@
     const manager = new THREE.LoadingManager();
     // 加载完成
     manager.onLoad = function ( ) {
-      info();
+      init();
       console.log( '加载完成!');
     };
     // 加载进度
@@ -102,7 +102,7 @@
     const sideMap04 = texture.load('./resource/VR-Showings/side-04.jpeg'); // 侧面
     
     // 初始化
-    function info () {
+    function init () {
       // 创建几何体
       const box = new THREE.BoxGeometry(50, 50, 50);
       const boxBasicMaterial = [
@@ -158,7 +158,6 @@
       }
       animation();
     }
-    
   </script>
 </body>
 </html>
