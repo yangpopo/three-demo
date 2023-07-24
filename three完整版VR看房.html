@@ -38,6 +38,7 @@
 			document.getElementsByTagName('body')[0].appendChild(stats.domElement);
 
       let scene, camera, renderer, controls;
+			let labelGeometryArray = []; // 所有标签数组
 
       // 创建加载管理器
 			const manager = new THREE.LoadingManager();
@@ -117,7 +118,6 @@
 				});
 				const haloMesh = new THREE.Mesh( haloGeometry, haloMaterial );
 				haloMesh.rotation.set(-Math.PI / 2, 0, 0);
-				// scene.add(haloMesh);
 
 				// 光圈动画
 				let haloGsap = gsap.timeline();
@@ -134,8 +134,9 @@
 					depthWrite: false,
 				});
 				const lightBeamMesh = new THREE.Mesh(lightBeamGeometry, lightBeamMaterial);
-				lightBeamMesh.add(lightBeamMesh.clone().rotateY(Math.PI / 2))
-				lightBeamMesh.position.set(0, .05, 0);
+				lightBeamMesh.add(lightBeamMesh.clone().rotateY(Math.PI / 2));
+				lightBeamMesh.position.set(0, .02, 0);
+				lightBeamMesh.scale.set(.5, .5, .5);
 
 				// 创建组对象
 				const labelLightGroup = new THREE.Group();
@@ -151,9 +152,39 @@
 					repeat: -1,
 					yoyo: true,
 				})
-				galleyLabel.position.set(0.15, 0.2, 0.4);
+				galleyLabel.position.set(0.15, -0.14, 0.45);
+				galleyLabel.scale.set(0.5, 0.5, 0.5);
+				galleyLabel.name = 'galleyLabel';
 				scene.add(galleyLabel);
-				
+				labelGeometryArray.push(galleyLabel);
+
+				// 阳台标签
+				let balconyLabel = labelLightGroup.clone();
+				haloGsap.to(balconyLabel.children[0].scale, {
+					duration: 1,
+					x: 1.5,
+      		y: 1.5,
+					repeat: -1,
+					yoyo: true,
+				})
+				balconyLabel.position.set(0.06, -0.12, -0.45);
+				balconyLabel.scale.set(0.5, 0.5, 0.5);
+				scene.add(balconyLabel);
+				labelGeometryArray.push(balconyLabel);
+
+				// 走廊标签
+				let corridorLabel = labelLightGroup.clone();
+				haloGsap.to(corridorLabel.children[0].scale, {
+					duration: 1,
+					x: 1.5,
+      		y: 1.5,
+					repeat: -1,
+					yoyo: true,
+				})
+				corridorLabel.position.set(0.4, -0.10, -0.05);
+				corridorLabel.scale.set(0.5, 0.5, 0.5);
+				scene.add(corridorLabel);
+				labelGeometryArray.push(corridorLabel);
 
 
 
@@ -168,6 +199,32 @@
 				controls.maxPolarAngle = Math.PI - Math.PI / 3 // 垂直旋转角度限制
 				controls.minPolarAngle = Math.PI / 3;
 				controls.maxDistance = 0.35;
+
+				// 鼠标点击切换相关
+				// 创建鼠标二维坐标  创建光线投射
+				const mouse = new THREE.Vector2(), raycaster = new THREE.Raycaster();
+				// 检查单击的地方是否与对象交集
+				function mouseIntersect() {
+					// 转换鼠标坐标
+					mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+					mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+					raycaster.setFromCamera(mouse, camera);
+					// 检测鼠标的坐标是否与物体相交, 包括他的所有后代
+					const intersections = raycaster.intersectObjects(labelGeometryArray, true);
+					return intersections
+				}
+
+				// 当鼠标按下
+				document.addEventListener("mouseup", (event) => {
+					event.preventDefault(); // 禁止默认事件
+					let intersections = mouseIntersect();
+					console.log(intersections, "-----");
+					// if ( intersections.length > 0 ) {
+					// 	console.log(intersections)
+					// }
+				})
+
+
 
 				// 监听窗口
 				window.addEventListener('resize', () => {

@@ -141,19 +141,19 @@
     const trackballControls = new TrackballControls(camera, renderer.domElement);
 
     // 创建拖拽控制器
-    const dragControls = new DragControls( [ ...boxGeometryArray ], camera, renderer.domElement);
+    const dragControls = new DragControls([ ...boxGeometryArray ], camera, renderer.domElement);
 
     // 创建鼠标二维坐标  创建光线投射
     const mouse = new THREE.Vector2(), raycaster = new THREE.Raycaster();
 
-    // 检查单机的地方是否与对象交集
+    // 检查单击的地方是否与对象交集
     function mouseIntersect() {
       // 转换鼠标坐标
       mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
       mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
       raycaster.setFromCamera( mouse, camera );
       // 检测鼠标的坐标是否与物体相交, 包括他的所有后代
-      const intersections = raycaster.intersectObjects(boxGeometryArray, true );
+      const intersections = raycaster.intersectObjects(boxGeometryArray, true);
       return intersections
     }
 
