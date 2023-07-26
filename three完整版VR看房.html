@@ -39,6 +39,220 @@
 
       let scene, camera, renderer, controls;
 			let labelGeometryArray = []; // 所有标签数组
+			// 所有标签定位
+			let labelGeometryAttr = {
+				// 客厅
+				parlorLabel: {
+					parlorLabel: {
+						locate: {
+							x: 0,
+							y: -0.14,
+							z: 0
+						},
+						visible: false,
+					},
+					galleyLabel: {
+						locate: {
+							x: 0.15,
+							y: -0.14,
+							z: 0.45
+						},
+						visible: true,
+					},
+					balconyLabel: {
+						locate: {
+							x: 0.06,
+							y: -0.12,
+							z: -0.45
+						},
+						visible: true,
+					},
+					corridorLabel: {
+						locate: {
+							x: 0.4,
+							y: -0.10,
+							z: -0.05
+						},
+						visible: true,
+					},
+					bedroomLabel: {
+						locate: {
+							x: 0.4,
+							y: -0.10,
+							z: -0.05
+						},
+						visible: false,
+					}
+				},
+				// 阳台
+				balconyLabel: {
+					parlorLabel: {
+						locate: {
+							x: 0.1,
+							y: -0.14,
+							z: 0.4
+						},
+						visible: true,
+					},
+					galleyLabel: {
+						locate: {
+							x: 0.15,
+							y: -0.14,
+							z: 0.45
+						},
+						visible: false,
+					},
+					balconyLabel: {
+						locate: {
+							x: 0.06,
+							y: -0.12,
+							z: -0.45
+						},
+						visible: false,
+					},
+					corridorLabel: {
+						locate: {
+							x: 0.4,
+							y: -0.10,
+							z: -0.05
+						},
+						visible: false,
+					},
+					bedroomLabel: {
+						locate: '0.4, -0.10, -0.05',
+						visible: false,
+					}
+				},
+
+				// 厨房
+				galleyLabel: {
+					parlorLabel: {
+						locate: {
+							x: -0.3,
+							y: -0.14,
+							z: 0.18
+						},
+						visible: true,
+					},
+					galleyLabel: {
+						locate: {
+							x: 0.15,
+							y: -0.14,
+							z: 0.45
+						},
+						visible: false,
+					},
+					balconyLabel: {
+						locate: {
+							x: -0.4,
+							y: -0.075,
+							z: 0.04
+						},
+						visible: true,
+					},
+					corridorLabel: {
+						locate: {
+							x: 0.4,
+							y: -0.10,
+							z: -0.05
+						},
+						visible: false,
+					},
+					bedroomLabel: {
+						locate: {
+							x: 0.4,
+							y: -0.10,
+							z: -0.05
+						},
+						visible: false,
+					}
+				},
+				// 走廊
+				corridorLabel: {
+					parlorLabel: {
+						locate: {
+							x: 0.4,
+							y: -0.14,
+							z: 0.05
+						},
+						visible: true,
+					},
+					galleyLabel: {
+						locate: {
+							x: 0.15,
+							y: -0.14,
+							z: 0.45
+						},
+						visible: false,
+					},
+					balconyLabel: {
+						locate: {
+							x: -0.4,
+							y: -0.075,
+							z: 0.04
+						},
+						visible: false,
+					},
+					corridorLabel: {
+						locate: {
+							x: 0.4,
+							y: -0.10,
+							z: -0.05
+						},
+						visible: false,
+					},
+					bedroomLabel: {
+						locate: {
+							x: -0.4,
+							y: -0.2,
+							z: 0.06
+						},
+						visible: true,
+					}
+				},
+				bedroomLabel: {
+					parlorLabel: {
+						locate: {
+							x: 0.4,
+							y: -0.14,
+							z: 0.05
+						},
+						visible: false,
+					},
+					galleyLabel: {
+						locate: {
+							x: 0.15,
+							y: -0.14,
+							z: 0.45
+						},
+						visible: false,
+					},
+					balconyLabel: {
+						locate: {
+							x: -0.4,
+							y: -0.075,
+							z: 0.04
+						},
+						visible: false,
+					},
+					corridorLabel: {
+						locate: {
+							x: 0.02,
+							y: -0.19,
+							z: 0.35
+						},
+						visible: true,
+					},
+					bedroomLabel: {
+						locate: {
+							x: -0.4,
+							y: -0.075,
+							z: 0.04
+						},
+						visible: false,
+					}
+				}
+			}
 
       // 创建加载管理器
 			const manager = new THREE.LoadingManager();
@@ -65,13 +279,44 @@
 			const parlorPositiveMap = texture.load('./resource/whole-VR-showings/0_f.jpg'); // 正面
 			const parlorVersoMap = texture.load('./resource/whole-VR-showings/0_b.jpg'); // 背面
 
+			// 阳台纹理
+			const balconyRightMap = texture.load('./resource/whole-VR-showings/8_r.jpg'); // 右
+			const balconyLeftMap = texture.load('./resource/whole-VR-showings/8_l.jpg'); // 左
+			const balconyTopMap = texture.load('./resource/whole-VR-showings/8_u.jpg'); // 顶部
+			const balconyBottomMap = texture.load('./resource/whole-VR-showings/8_d.jpg'); // 底部
+			const balconyPositiveMap = texture.load('./resource/whole-VR-showings/8_f.jpg'); // 正面
+			const balconyVersoMap = texture.load('./resource/whole-VR-showings/8_b.jpg'); // 背面
+
 			// 厨房纹理
-			const kitchenRightMap = texture.load('./resource/whole-VR-showings/3_r.jpg'); // 右
-			const kitchenLeftMap = texture.load('./resource/whole-VR-showings/3_l.jpg'); // 左
-			const kitchenTopMap = texture.load('./resource/whole-VR-showings/3_u.jpg'); // 顶部
-			const kitchenBottomMap = texture.load('./resource/whole-VR-showings/3_d.jpg'); // 底部
-			const kitchenPositiveMap = texture.load('./resource/whole-VR-showings/3_f.jpg'); // 正面
-			const kitchenVersoMap = texture.load('./resource/whole-VR-showings/3_b.jpg'); // 背面
+			const galleyRightMap = texture.load('./resource/whole-VR-showings/3_r.jpg'); // 右
+			const galleyLeftMap = texture.load('./resource/whole-VR-showings/3_l.jpg'); // 左
+			const galleyTopMap = texture.load('./resource/whole-VR-showings/3_u.jpg'); // 顶部
+			const galleyBottomMap = texture.load('./resource/whole-VR-showings/3_d.jpg'); // 底部
+			const galleyPositiveMap = texture.load('./resource/whole-VR-showings/3_f.jpg'); // 正面
+			const galleyVersoMap = texture.load('./resource/whole-VR-showings/3_b.jpg'); // 背面
+
+			// 走廊
+			const corridorRightMap = texture.load('./resource/whole-VR-showings/9_r.jpg'); // 右
+			const corridorLeftMap = texture.load('./resource/whole-VR-showings/9_l.jpg'); // 左
+			const corridorTopMap = texture.load('./resource/whole-VR-showings/9_u.jpg'); // 顶部
+			const corridorBottomMap = texture.load('./resource/whole-VR-showings/9_d.jpg'); // 底部
+			const corridorPositiveMap = texture.load('./resource/whole-VR-showings/9_f.jpg'); // 正面
+			const corridorVersoMap = texture.load('./resource/whole-VR-showings/9_b.jpg'); // 背面
+
+			// 卧室
+			const bedroomRightMap = texture.load('./resource/whole-VR-showings/18_r.jpg'); // 右
+			const bedroomLeftMap = texture.load('./resource/whole-VR-showings/18_l.jpg'); // 左
+			const bedroomTopMap = texture.load('./resource/whole-VR-showings/18_u.jpg'); // 顶部
+			const bedroomBottomMap = texture.load('./resource/whole-VR-showings/18_d.jpg'); // 底部
+			const bedroomPositiveMap = texture.load('./resource/whole-VR-showings/18_f.jpg'); // 正面
+			const bedroomVersoMap = texture.load('./resource/whole-VR-showings/18_b.jpg'); // 背面
+
+
+			// 摄像头动画选项
+			let cameraGsapOption = {
+				val: 0
+			};
+			let cameraGsap = gsap.timeline(); // 创建摄像头动画线
 
 
       function init() {
@@ -142,6 +387,22 @@
 				const labelLightGroup = new THREE.Group();
 				labelLightGroup.add(haloMesh);
 				labelLightGroup.add(lightBeamMesh);
+				
+				// 客厅标签
+				let parlorLabel = labelLightGroup.clone();
+				haloGsap.to(parlorLabel.children[0].scale, {
+					duration: 1,
+					x: 1.5,
+      		y: 1.5,
+					repeat: -1,
+					yoyo: true,
+				})
+				parlorLabel.position.set(0, -0.14, 0);
+				parlorLabel.scale.set(0.5, 0.5, 0.5);
+				parlorLabel.name = 'parlorLabel';
+				parlorLabel.visible = false;
+				scene.add(parlorLabel);
+				labelGeometryArray.push(parlorLabel);
 
 				// 厨房标签
 				let galleyLabel = labelLightGroup.clone();
@@ -169,6 +430,7 @@
 				})
 				balconyLabel.position.set(0.06, -0.12, -0.45);
 				balconyLabel.scale.set(0.5, 0.5, 0.5);
+				balconyLabel.name = 'balconyLabel';
 				scene.add(balconyLabel);
 				labelGeometryArray.push(balconyLabel);
 
@@ -183,11 +445,25 @@
 				})
 				corridorLabel.position.set(0.4, -0.10, -0.05);
 				corridorLabel.scale.set(0.5, 0.5, 0.5);
+				corridorLabel.name = 'corridorLabel';
 				scene.add(corridorLabel);
 				labelGeometryArray.push(corridorLabel);
-
-
-
+				
+				// 卧室标签
+				let bedroomLabel = labelLightGroup.clone();
+				haloGsap.to(bedroomLabel.children[0].scale, {
+					duration: 1,
+					x: 1.5,
+      		y: 1.5,
+					repeat: -1,
+					yoyo: true,
+				})
+				bedroomLabel.position.set(-0.3, -0.15, 0.05);
+				bedroomLabel.scale.set(0.5, 0.5, 0.5);
+				bedroomLabel.name = 'bedroomLabel';
+				bedroomLabel.visible = false;
+				scene.add(bedroomLabel);
+				labelGeometryArray.push(bedroomLabel);
 
 
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -214,17 +490,133 @@
 					return intersections
 				}
 
+				// 获取标签名称
+				function getLabelName(obj) {
+					if (obj.type != 'Group') {
+						return getLabelName(obj.parent)
+					} else {
+						return obj.name
+					}
+				}
+
+				function cameraAnimation(roomName) {
+					cameraGsap.add(gsap.to(cameraGsapOption, {
+							val: 0.5,
+							duration: .5,
+							onUpdate: function() {
+								camera.fov = 45 * (1 - cameraGsapOption.val);
+								camera.updateProjectionMatrix();
+							},
+							onComplete: function() {
+								if (roomName == 'parlorLabel') {
+									// 客厅
+									console.log('客厅');
+									boxMesh.material[0].map = parlorRightMap;
+									boxMesh.material[1].map = parlorLeftMap;
+									boxMesh.material[2].map = parlorTopMap;
+									boxMesh.material[3].map = parlorBottomMap;
+									boxMesh.material[4].map = parlorPositiveMap;
+									boxMesh.material[5].map = parlorVersoMap;
+								} else if (roomName == 'galleyLabel') {
+									// 厨房
+									console.log('厨房');
+									boxMesh.material[0].map = galleyRightMap;
+									boxMesh.material[1].map = galleyLeftMap;
+									boxMesh.material[2].map = galleyTopMap;
+									boxMesh.material[3].map = galleyBottomMap;
+									boxMesh.material[4].map = galleyPositiveMap;
+									boxMesh.material[5].map = galleyVersoMap;
+								} else if (roomName == 'balconyLabel') {
+									// 阳台
+									console.log('阳台');
+									boxMesh.material[0].map = balconyRightMap;
+									boxMesh.material[1].map = balconyLeftMap;
+									boxMesh.material[2].map = balconyTopMap;
+									boxMesh.material[3].map = balconyBottomMap;
+									boxMesh.material[4].map = balconyPositiveMap;
+									boxMesh.material[5].map = balconyVersoMap;
+								} else if (roomName == 'corridorLabel') {
+									// 走廊
+									console.log('走廊');
+									boxMesh.material[0].map = corridorRightMap;
+									boxMesh.material[1].map = corridorLeftMap;
+									boxMesh.material[2].map = corridorTopMap;
+									boxMesh.material[3].map = corridorBottomMap;
+									boxMesh.material[4].map = corridorPositiveMap;
+									boxMesh.material[5].map = corridorVersoMap;
+								} else if (roomName == 'bedroomLabel') {
+									// 卧室
+									console.log('卧室');
+									boxMesh.material[0].map = bedroomRightMap;
+									boxMesh.material[1].map = bedroomLeftMap;
+									boxMesh.material[2].map = bedroomTopMap;
+									boxMesh.material[3].map = bedroomBottomMap;
+									boxMesh.material[4].map = bedroomPositiveMap;
+									boxMesh.material[5].map = bedroomVersoMap;
+								}
+								parlorLabel.position.set(
+									labelGeometryAttr[roomName].parlorLabel.locate.x,
+									labelGeometryAttr[roomName].parlorLabel.locate.y,
+									labelGeometryAttr[roomName].parlorLabel.locate.z,
+								);
+								parlorLabel.visible = labelGeometryAttr[roomName].parlorLabel.visible;
+
+								galleyLabel.position.set(
+									labelGeometryAttr[roomName].galleyLabel.locate.x,
+									labelGeometryAttr[roomName].galleyLabel.locate.y,
+									labelGeometryAttr[roomName].galleyLabel.locate.z,
+								);
+								galleyLabel.visible = labelGeometryAttr[roomName].galleyLabel.visible;
+
+								balconyLabel.position.set(
+									labelGeometryAttr[roomName].balconyLabel.locate.x,
+									labelGeometryAttr[roomName].balconyLabel.locate.y,
+									labelGeometryAttr[roomName].balconyLabel.locate.z,
+								);
+								balconyLabel.visible = labelGeometryAttr[roomName].balconyLabel.visible;
+
+								corridorLabel.position.set(
+									labelGeometryAttr[roomName].corridorLabel.locate.x,
+									labelGeometryAttr[roomName].corridorLabel.locate.y,
+									labelGeometryAttr[roomName].corridorLabel.locate.z,
+								);
+								corridorLabel.visible = labelGeometryAttr[roomName].corridorLabel.visible;
+
+								bedroomLabel.position.set(
+									labelGeometryAttr[roomName].bedroomLabel.locate.x,
+									labelGeometryAttr[roomName].bedroomLabel.locate.y,
+									labelGeometryAttr[roomName].bedroomLabel.locate.z,
+								);
+								bedroomLabel.visible = labelGeometryAttr[roomName].bedroomLabel.visible;
+
+							}
+						}
+					));
+					cameraGsap.to(cameraGsapOption, {
+						val: 0,
+						duration: .5,
+						onUpdate: function() {
+							camera.fov = 45 * (1 - cameraGsapOption.val);
+							camera.updateProjectionMatrix();
+						},
+						onComplete: function() {
+							console.log('减法完成');
+						}
+					})
+				}
+
 				// 当鼠标按下
 				document.addEventListener("mouseup", (event) => {
 					event.preventDefault(); // 禁止默认事件
 					let intersections = mouseIntersect();
-					console.log(intersections, "-----");
-					// if ( intersections.length > 0 ) {
-					// 	console.log(intersections)
-					// }
+					let labelName = ''; // 标签名称
+					if (intersections.length > 0) {
+						labelName = getLabelName(intersections[0].object);
+					}
+					if (labelName != '') {
+						cameraAnimation(labelName);
+					}
 				})
-
-
 
 				// 监听窗口
 				window.addEventListener('resize', () => {

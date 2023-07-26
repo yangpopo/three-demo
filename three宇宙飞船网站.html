@@ -295,7 +295,6 @@
           let x = 0, y = 0;
           x = (event.clientX / (window.innerWidth * 1.8)) * 2 - 1;
           y = (event.clientY / window.innerHeight) * 2 - 1;
-          let gsapTimeline00 = gsap.timeline(); // 创建时间线动画
           // 立方体动画
           gsap.to(boxMesh.rotation, {
             duration: 3,
