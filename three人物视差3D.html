@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>My first three.js app</title>
+	<style>
+		body {
+			margin: 0;
+		}
+	</style>
+</head>
+
+<body>
+	<script type="importmap">
+			{
+				"imports": {
+					"three": "./build/three.module.js"
+				}
+			}
+		</script>
+	<script type="module">
+		import * as THREE from "three";
+		import { OrbitControls } from "./jsm/controls/OrbitControls.js";
+		import { GLTFLoader } from "./jsm/loaders/GLTFLoader.js";
+
+		let scene, camera, renderer, material, mouse;
+		let curve = null, model = null;
+		let progress = 0; // 物体运动时在运动路径的初始位置，范围0~1
+		const velocity = 0.001; // 影响运动速率的一个值，范围0~1，需要和渲染频率结合计算才能得到真正的速率
+
+		// 渲染器开启阴影渲染：renderer.shadowMapEnabled = true;
+		// 灯光需要开启“引起阴影”：light.castShadow = true;
+
+		// 创建加载管理器
+		const manager = new THREE.LoadingManager();
+		// 加载完成
+		manager.onLoad = function ( ) {
+			init();
+			console.log( '加载完成!');
+		};
+		// 加载进度
+		manager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
+			console.log( '加载进度: ' + (itemsLoaded / itemsTotal * 100).toFixed(2) );
+		};
+
+		// 创建纹理加载器
+		const texture = new THREE.TextureLoader(manager);
+    /* 女孩 */
+		const girlPrototypeMap = texture.load('./resource/photoParallax/character.png');
+		const girlDepthMap = texture.load('./resource/photoParallax/character_depth.jpg');
+
+    // 猫
+    const catPrototypeMap = texture.load('./resource/photoParallax/cat.jpg');
+		const catDepthMap = texture.load('./resource/photoParallax/cat_depth.jpg');
+
+		function init() {
+			scene = new THREE.Scene();
+			camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+			renderer = new THREE.WebGLRenderer({
+        antialias: true
+      });
+			// position and point the camera to the center of the scene
+			camera.position.set(0, 0, 1);
+			camera.lookAt(scene.position);
+
+			// 增加坐标系红色代表 X 轴. 绿色代表 Y 轴. 蓝色代表 Z 轴.
+			const axes = new THREE.AxesHelper(20);
+			scene.add(axes);
+
+			// 鼠标坐标
+			mouse = new THREE.Vector2();
+
+			// 面板-女孩
+			// const realityPanel = new THREE.PlaneGeometry(1.6, 1);
+      // 面板-猫
+      const realityPanel = new THREE.PlaneGeometry(3/2, 4/2);
+			// 创建着色器材质
+			material = new THREE.ShaderMaterial({
+				uniforms: { 
+          // 女孩
+          // uTexture: { value: girlPrototypeMap },
+					// uDepthTexture: { value: girlDepthMap},
+          // 猫
+          uTexture: { value: catPrototypeMap },
+					uDepthTexture: { value: catDepthMap},
+					uMouse: { value: mouse},
+				},
+        // 顶点着色器
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        // 片着色器
+        fragmentShader: `
+          uniform sampler2D uTexture;
+          uniform sampler2D uDepthTexture;
+          uniform vec2 uMouse;
+          varying vec2 vUv;
+          void main() {
+            vec4 color = texture2D(uTexture, vUv);
+            vec4 depth = texture2D(uDepthTexture, vUv);
+            float depthValue = depth.r;
+            float x = vUv.x + uMouse.x * 0.01 * depthValue;
+            float y = vUv.y + uMouse.y * 0.01 * depthValue;
+            vec4 newColor = texture2D(uTexture, vec2(x, y));
+            gl_FragColor = newColor;
+          }
+         `,
+				
+			});
+			const realityPanelMesh = new THREE.Mesh(realityPanel, material);
+			scene.add(realityPanelMesh);
+
+
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			document.body.appendChild(renderer.domElement);
+
+			// 控制器
+			// const controls = new OrbitControls(camera, renderer.domElement);
+			animate()
+      window.addEventListener('mousemove', (event) => {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = (event.clientY / window.innerHeight) * 2 + 1;
+      })
+		}
+
+		function animate() {
+      material.uniforms.uMouse.value = mouse;
+			requestAnimationFrame(animate);
+			renderer.render(scene, camera);
+		};
+
+		
+	</script>
+</body>
+
+</html>
