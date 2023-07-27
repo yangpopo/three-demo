@@ -85,6 +85,12 @@
       mixer.clipAction(gltf.animations[0]).play();
       renderer.render( scene, camera );
       renderer.setAnimationLoop(animation); // 加载完成后渲染动画
+      // 监听窗口
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      })
     }, (res) => {
       console.log('加载进度:', ((res.loaded / res.total) * 100).toFixed(2) + '%');
     })

@@ -159,6 +159,12 @@
           animationJSON[key].play(); // 所有动画都播放
         }
         animation(); // 更新动画
+        // 监听窗口
+        window.addEventListener('resize', () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        })
       }, 
       (res) => {
         console.log('加载进度:', ((res.loaded / res.total) * 100).toFixed(2) + '%')

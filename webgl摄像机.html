@@ -180,6 +180,12 @@
       requestAnimationFrame(animation);
     }
     animation();
+    // 监听窗口
+    window.addEventListener('resize', () => {
+      perspectiveCamera.aspect = window.innerWidth / window.innerHeight;
+      perspectiveCamera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    })
   </script>
 </body>
 </html>

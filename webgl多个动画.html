@@ -154,6 +154,12 @@
       mixers.push(mixer01);
 
       animation();
+      // 监听窗口
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      })
     }, (res) => {
       console.log('加载进度:', ((res.loaded / res.total) * 100).toFixed(2) + '%')
     })

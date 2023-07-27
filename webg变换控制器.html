@@ -141,6 +141,12 @@
       requestAnimationFrame(animation);
     }
     animation();
+    // 监听窗口
+    window.addEventListener('resize', () => {
+      cameraPersp.aspect = window.innerWidth / window.innerHeight;
+      cameraPersp.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    })
   </script>
 </body>
 </html>
